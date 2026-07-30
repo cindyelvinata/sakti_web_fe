@@ -1,0 +1,3 @@
+import { Menu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+export default function Topbar({onMenuClick}){const date=new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).format(new Date());return <header className="flex h-[77px] items-center border-b border-slate-200 bg-white px-5 sm:px-8 lg:px-12"><Button className="mr-3 p-2 lg:hidden" onClick={onMenuClick} aria-label="Buka menu"><Menu/></Button><div><h1 className="text-xl font-bold leading-6 text-slate-900 sm:text-2xl">Monitoring SAKTI</h1><p className="text-xs text-slate-500">{date}</p></div></header>}

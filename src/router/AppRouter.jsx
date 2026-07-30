@@ -1,0 +1,12 @@
+import { BrowserRouter,Route,Routes } from 'react-router-dom'
+import AdminLayout from '@/components/layout/AdminLayout'
+import DashboardPage from '@/pages/Dashboard/DashboardPage'
+import AttendanceReportPage from '@/pages/LaporanPresensi/AttendanceReportPage'
+import LeaveReportPage from '@/pages/KelolaCuti/LeaveReportPage'
+import EmployeeManagementPage from '@/pages/KelolaKaryawan/EmployeeManagementPage'
+import PlaceholderPage from '@/pages/PlaceholderPage'
+import SettingsPage from '@/pages/Pengaturan/SettingsPage'
+import ProfilePage from '@/pages/Profile/ProfilePage'
+import LoginPage from '@/pages/Login/LoginPage'
+import { ROUTES } from '@/constants/routes'
+export default function AppRouter(){return <BrowserRouter><Routes><Route element={<AdminLayout/>}><Route index element={<DashboardPage/>}/><Route path={ROUTES.laporanPresensi} element={<AttendanceReportPage/>}/><Route path={ROUTES.laporanCuti} element={<LeaveReportPage/>}/><Route path={ROUTES.kelolaKaryawan} element={<EmployeeManagementPage/>}/><Route path={ROUTES.pengaturan} element={<SettingsPage/>}/><Route path={ROUTES.profile} element={<ProfilePage/>}/></Route><Route path={ROUTES.login} element={<LoginPage/>}/></Routes></BrowserRouter>}

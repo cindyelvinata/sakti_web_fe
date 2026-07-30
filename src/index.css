@@ -1,0 +1,10 @@
+@import "tailwindcss";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+@theme { --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif; }
+@layer base { * { @apply border-slate-200; } body { @apply m-0 min-w-[320px] bg-white font-sans text-slate-900 antialiased; } }
+
+/* Menyeragamkan aset SVG hitam dengan warna biru toska pada referensi profil. */
+.icon-profile-detail { filter: brightness(0) saturate(100%) invert(49%) sepia(36%) saturate(1058%) hue-rotate(143deg) brightness(86%) contrast(91%); }
