@@ -1,12 +1,8 @@
 export const attendanceRecords = [
-  { id: 1, name: 'Martin Hasibuan', division: 'Engineering', position: 'Senior Developer', checkIn: '08:02', checkOut: '17:05', gps: '89.234127423', status: 'Hadir' },
-  { id: 2, name: 'Siti Nur Amalia', division: 'Human Resource', position: 'HR Manager', checkIn: '08:45', checkOut: '-', gps: '12893.234223', status: 'Terlambat' },
-  { id: 3, name: 'Hosea Jeremy G', division: 'Finance', position: 'Finance Analyst', checkIn: '07:58', checkOut: '17:00', gps: '72.1615742310', status: 'Hadir' },
-  { id: 4, name: 'Julian Ramadhan', division: 'Marketing', position: 'Marketing Lead', checkIn: '08:10', checkOut: '17:15', gps: '65.233412093', status: 'Hadir' },
-  { id: 5, name: 'Ningsih Ayunda', division: 'Engineering', position: 'Backend Engineer', checkIn: '-', checkOut: '-', gps: '-', status: 'Cuti' },
-  { id: 6, name: 'Kaino Ali', division: 'Design', position: 'UI/UX Designer', checkIn: '-', checkOut: '-', gps: '-', status: 'Izin' },
-  { id: 7, name: 'Aisha Kamila', division: 'Finance', position: 'Accountant', checkIn: '08:00', checkOut: '17:11', gps: '77.2041274211', status: 'Hadir' },
-  { id: 8, name: 'Mutiara Salsa', division: 'Operations', position: 'Ops Manager', checkIn: '08:00', checkOut: '17:15', gps: '125.93234223', status: 'Hadir' },
-  { id: 9, name: 'Kusuma Wijaya', division: 'IT Infrastructure', position: 'Project Manager', checkIn: '-', checkOut: '-', gps: '-', status: 'Izin' },
-  { id: 10, name: 'Sean Septian', division: 'Marketing', position: 'Marketing Staff', checkIn: '08:02', checkOut: '17:14', gps: '69.123412093', status: 'Hadir' },
+  { id: 1, name: 'Dwi Erfan Yudianto', date: '6/24/2026', checkIn: '8:35:20', checkInStatus: 'Terlambat', checkOut: '4:30:09', checkOutStatus: 'Keluar', locationStatus: 'Dalam Radius' },
+  { id: 2, name: 'Fajar Irwan Mashabi', date: '6/24/2026', checkIn: '8:05:20', checkInStatus: 'Tepat Waktu', checkOut: '8:00:09', checkOutStatus: 'Lembur', locationStatus: 'Dalam Radius' },
+  { id: 3, name: "Ahmad Rifa'i", date: '6/20/2026', checkIn: '-', checkInStatus: 'Cuti', checkOut: '-', checkOutStatus: 'Cuti', locationStatus: '-' },
+  { id: 4, name: 'Nanang Haryono', date: '6/21/2026', checkIn: '-', checkInStatus: 'Cuti', checkOut: '-', checkOutStatus: 'Cuti', locationStatus: '-' },
+  { id: 5, name: 'Atiek Christin', date: '7/1/2026', checkIn: '8:06:00', checkInStatus: 'Tepat Waktu', checkOut: '4:50:00', checkOutStatus: 'Keluar', locationStatus: 'Dalam Radius' },
+  { id: 6, name: 'Budi Santoso', date: '7/1/2026', checkIn: '8:01:00', checkInStatus: 'Tepat Waktu', checkOut: '5:05:00', checkOutStatus: 'Belum Presensi', locationStatus: '-' },
 ]

@@ -1,154 +1,55 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronDown, Download, Search } from 'lucide-react'
-import { getAttendanceReport, downloadAttendanceReport } from '@/services/attendanceService'
+import { ChevronDown, Search } from 'lucide-react'
+import DownloadReportDialog from '@/components/dialogs/DownloadReportDialog'
+import { downloadAttendanceReport, getAttendanceReport } from '@/services/attendanceService'
 import { authStorage } from '@/lib/authStorage'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
 
-const filters = ['Semua Status', 'Hadir', 'Terlambat', 'Cuti']
-const statusStyle = {
-  Hadir: 'border-[#B7DFE9] bg-[#EDF9FC] text-[#1E93AB]',
-  Terlambat: 'border-red-200 bg-red-50 text-[#E62727]',
-  Cuti: 'border-red-200 bg-red-50 text-[#E62727]',
-}
+const filters = ['Semua Status', 'Terlambat', 'Tepat Waktu', 'Cuti', 'Belum Presensi', 'Keluar', 'Lembur', 'Dalam Radius']
+const blueBadge = 'border-[#B7DFE9] bg-[#EDF9FC] text-[#1E93AB]'
+const redBadge = 'border-[#FFB7B7] bg-[#FFF0F0] text-[#EF2427]'
+const displayStatus = { terlambat: 'Terlambat', tepat_waktu: 'Tepat Waktu', belum_presensi: 'Belum Presensi', presensi_keluar: 'Keluar', lembur: 'Lembur', dalam_radius: 'Dalam Radius', di_luar_radius: 'Di Luar Radius' }
 
-function formatTime(value) {
+function formatDate(value) {
   if (!value) return '-'
-  if (/^\d{1,2}:\d{2}/.test(String(value))) return String(value).slice(0, 5)
-
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+  const [year, month, day] = String(value).split('-')
+  return year && month && day ? `${Number(month)}/${Number(day)}/${year}` : String(value)
 }
-
-function formatStatus(value) {
-  const status = String(value || '').toLowerCase()
-  return { hadir: 'Hadir', terlambat: 'Terlambat', cuti: 'Cuti' }[status] || (value ? String(value) : '-')
+function readableStatus(value) {
+  const normalized = String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_')
+  return displayStatus[normalized] || (value ? String(value).replace(/_/g, ' ') : '-')
 }
+function statusKey(value) { return String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_') }
+function dateParam(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
+function getDownloadName(contentDisposition) { return contentDisposition?.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)?.[1]?.replace(/['"]/g, '') || 'laporan-presensi.csv' }
 
-function normalizeRecord(item) {
-  return {
-    id: item.id || item.presensi_id || item.attendance_id,
-    name: item.nama_lengkap || '-',
-    division: item.level_jabatan || '-',
-    position: '-',
-    checkIn: formatTime(item.jam_masuk),
-    checkOut: formatTime(item.jam_keluar),
-    gps: item.lintang_masuk || '-',
-    status: formatStatus(item.status),
-  }
+function StatusBadge({ children }) {
+  const redStatuses = ['Terlambat', 'Cuti', 'Belum Presensi', 'Di Luar Radius']
+  return <span className={cn('inline-flex min-w-[68px] justify-center rounded-full border px-3 py-1 text-[10px] font-bold uppercase whitespace-nowrap', redStatuses.includes(children) ? redBadge : blueBadge)}>{children}</span>
 }
-
-function StatusBadge({ status }) {
-  return <span className={cn('inline-flex min-w-[80px] justify-center rounded-full border px-3 py-1 text-[11px] font-semibold', statusStyle[status] || 'border-slate-200 bg-slate-100 text-slate-600')}>{status.toUpperCase()}</span>
-}
-
-function RecordCell({ record }) {
-  return <article className="border-b border-slate-200 p-4 last:border-0 sm:p-5"><div className="flex items-start justify-between gap-4"><div><p className="text-[13px] font-semibold text-black">{record.name}</p><p className="mt-1 text-[12px] font-semibold text-slate-700">{record.division}</p><p className="text-[11px] text-slate-400">{record.position}</p></div><StatusBadge status={record.status} /></div><div className="mt-4 grid grid-cols-3 gap-3 text-[11px]"><div><p className="text-slate-400">Jam masuk</p><p className="mt-1 font-semibold">{record.checkIn}</p></div><div><p className="text-slate-400">Jam keluar</p><p className="mt-1 font-semibold">{record.checkOut}</p></div><div><p className="text-slate-400">Lokasi GPS</p><p className="mt-1 truncate font-semibold">{record.gps}</p></div></div></article>
-}
-
-const reportDateRange = {
-  startDate: '2026-07-01',
-  endDate: '2026-07-31',
-}
-
-function getDownloadName(contentDisposition) {
-  const filename = contentDisposition?.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)?.[1]?.replace(/['"]/g, '')
-  return filename || 'laporan-presensi.csv'
-}
+function MobileRow({ row }) { return <article className="border-b border-slate-200 p-5 last:border-0"><p className="max-w-[150px] text-[13px] font-bold uppercase leading-5 text-black">{row.name}</p><div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4 text-[11px]"><div><p className="text-slate-500">Tanggal</p><p className="mt-1 font-semibold">{row.date}</p></div><div><p className="text-slate-500">Masuk</p><p className="mt-1 font-semibold">{row.checkIn}</p></div><div><p className="text-slate-500">Status Masuk</p><div className="mt-1"><StatusBadge>{row.checkInStatus}</StatusBadge></div></div><div><p className="text-slate-500">Keluar</p><p className="mt-1 font-semibold">{row.checkOut}</p></div><div><p className="text-slate-500">Status Keluar</p><div className="mt-1"><StatusBadge>{row.checkOutStatus}</StatusBadge></div></div><div><p className="text-slate-500">Status Lokasi</p><div className="mt-1">{row.locationStatus === '-' ? '-' : <StatusBadge>{row.locationStatus}</StatusBadge>}</div></div></div></article> }
 
 export default function AttendanceReportPage() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('Semua Status')
   const [filterOpen, setFilterOpen] = useState(false)
+  const [downloadOpen, setDownloadOpen] = useState(false)
   const [report, setReport] = useState({ items: [], meta: {} })
   const [page, setPage] = useState(1)
   const [isLoading, setIsLoading] = useState(true)
-  const [isDownloading, setIsDownloading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [downloadError, setDownloadError] = useState('')
 
-  const apiStatus = status === 'Semua Status' ? undefined : status.toLowerCase()
-
-  const requestParams = useMemo(() => ({
-    start_date: reportDateRange.startDate,
-    end_date: reportDateRange.endDate,
-    ...(apiStatus ? { status: apiStatus } : {}),
-    page,
-    limit: 10,
-  }), [apiStatus, page])
-
-  const redirectToLogin = useCallback(() => {
-    authStorage.clearSession()
-    navigate(ROUTES.login, { replace: true })
-  }, [navigate])
-
-  const loadReport = useCallback(async () => {
-    setIsLoading(true)
-    setErrorMessage('')
-
-    try {
-      setReport(await getAttendanceReport(requestParams))
-    } catch (error) {
-      if ([401, 403].includes(error.response?.status)) {
-        redirectToLogin()
-        return
-      }
-
-      setErrorMessage(error.response?.data?.message || error.message || 'Gagal memuat laporan presensi.')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [redirectToLogin, requestParams])
-
-  useEffect(() => {
-    // The initial API request intentionally populates the page state after mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadReport()
-  }, [loadReport])
-
-  const rows = useMemo(() => report.items.map(normalizeRecord).filter((record) => {
-    const term = query.trim().toLowerCase()
-    return !term || [record.name, record.division, record.position, record.status].some((value) => String(value).toLowerCase().includes(term))
-  }), [query, report.items])
-
-  const handleStatusChange = (nextStatus) => {
-    setStatus(nextStatus)
-    setPage(1)
-    setFilterOpen(false)
-  }
-
-  const download = async () => {
-    setIsDownloading(true)
-    setDownloadError('')
-
-    try {
-      const { file, contentDisposition } = await downloadAttendanceReport({
-        start_date: reportDateRange.startDate,
-        end_date: reportDateRange.endDate,
-        ...(apiStatus ? { status: apiStatus } : {}),
-      })
-      const url = URL.createObjectURL(file)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = getDownloadName(contentDisposition)
-      link.click()
-      URL.revokeObjectURL(url)
-    } catch (error) {
-      if ([401, 403].includes(error.response?.status)) {
-        redirectToLogin()
-        return
-      }
-
-      setDownloadError(error.response?.data?.message || 'Gagal mengunduh laporan presensi.')
-    } finally {
-      setIsDownloading(false)
-    }
-  }
-
-  const currentPage = report.meta?.page || report.meta?.current_page || page
-  const totalPages = report.meta?.total_pages || report.meta?.last_page || Math.ceil((report.meta?.total || 0) / (report.meta?.limit || 10)) || 1
-
-  return <div><header className="mb-8"><h2 className="text-[26px] font-bold leading-none text-slate-900">Laporan Presensi</h2><p className="mt-2 text-[14px] text-slate-500">Lihat dan ekspor laporan presensi karyawan</p></header><section className="rounded-2xl bg-[#EF2427] p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row"><label className="flex h-[52px] flex-1 items-center rounded-full bg-white px-6"><Search size={21} className="shrink-0 text-black" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="ml-4 w-full bg-transparent text-[14px] outline-none placeholder:text-slate-800" placeholder="Cari nama, divisi, jabatan, atau status..." /></label><div className="relative"><button type="button" onClick={() => setFilterOpen((open) => !open)} className="flex h-[52px] w-full items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-slate-700 sm:w-[185px]">{status}<ChevronDown size={18} className={cn('transition-transform', filterOpen && 'rotate-180')} /></button>{filterOpen && <div className="absolute right-0 z-20 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl sm:w-[185px]">{filters.map((item) => <button key={item} type="button" onClick={() => handleStatusChange(item)} className={cn('block w-full rounded-lg px-4 py-2 text-left text-[13px] hover:bg-red-50', status === item && 'bg-red-50 text-[#E62727]')}>{item}</button>)}</div>}</div><button type="button" onClick={download} disabled={isDownloading} className="flex h-[52px] items-center justify-center gap-3 rounded-full bg-white px-7 text-[13px] font-medium disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[195px]"><Download size={18} />{isDownloading ? 'Mengunduh...' : 'Unduh Laporan'}</button></div>{downloadError && <p role="alert" className="mt-3 text-center text-[13px] text-white">{downloadError}</p>}</section><section className="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white"><h3 className="border-b border-slate-200 px-5 py-5 text-[22px] font-bold text-slate-900 sm:px-6">Data Presensi Karyawan</h3>{errorMessage ? <div className="p-10 text-center"><p className="text-sm text-[#EF2427]">{errorMessage}</p><button type="button" onClick={loadReport} className="mt-3 text-sm font-semibold text-[#1E93AB]">Coba lagi</button></div> : <><div className="sm:hidden">{isLoading ? <p className="p-8 text-center text-sm text-slate-500">Memuat data presensi...</p> : rows.length ? rows.map((record, index) => <RecordCell key={record.id || index} record={record} />) : <p className="p-8 text-center text-sm text-slate-500">Data presensi tidak ditemukan.</p>}</div><div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[850px] text-left"><thead className="bg-slate-50 text-[13px] font-bold uppercase text-slate-500"><tr><th className="px-6 py-4">Karyawan</th><th className="px-5 py-4">Divisi/Jabatan</th><th className="px-5 py-4">Jam Masuk</th><th className="px-5 py-4">Jam Keluar</th><th className="px-5 py-4">Lokasi GPS</th><th className="px-5 py-4 text-center">Status</th></tr></thead><tbody>{isLoading ? <tr><td colSpan="6" className="p-10 text-center text-sm text-slate-500">Memuat data presensi...</td></tr> : rows.length ? rows.map((record, index) => <tr key={record.id || index} className="border-t border-slate-200 text-[13px] text-black"><td className="px-6 py-3.5 font-semibold">{record.name}</td><td className="px-5 py-2"><p className="font-semibold">{record.division}</p><p className="mt-0.5 text-[11px] text-slate-400">{record.position}</p></td><td className="px-5 py-3.5 font-semibold">{record.checkIn}</td><td className="px-5 py-3.5 font-semibold">{record.checkOut}</td><td className="px-5 py-3.5 font-semibold">{record.gps}</td><td className="px-5 py-3.5 text-center"><StatusBadge status={record.status} /></td></tr>) : <tr><td colSpan="6" className="p-10 text-center text-sm text-slate-500">Data presensi tidak ditemukan.</td></tr>}</tbody></table></div>{totalPages > 1 && <div className="flex items-center justify-center gap-4 border-t border-slate-200 px-5 py-4 text-sm"><button type="button" onClick={() => setPage((current) => current - 1)} disabled={currentPage <= 1 || isLoading} className="font-semibold text-[#1E93AB] disabled:cursor-not-allowed disabled:opacity-40">Sebelumnya</button><span className="text-slate-500">Halaman {currentPage} dari {totalPages}</span><button type="button" onClick={() => setPage((current) => current + 1)} disabled={currentPage >= totalPages || isLoading} className="font-semibold text-[#1E93AB] disabled:cursor-not-allowed disabled:opacity-40">Berikutnya</button></div>}</>}</section></div>
+  const loadReport = useCallback(async () => { setIsLoading(true); setErrorMessage(''); try { setReport(await getAttendanceReport({ page, limit: 10 })) } catch (error) { if ([401, 403].includes(error.response?.status)) { authStorage.clearSession(); navigate(ROUTES.login, { replace: true }); return } setErrorMessage(error.response?.data?.message || error.message || 'Gagal memuat laporan presensi.') } finally { setIsLoading(false) } }, [navigate, page])
+  // API load populates report state after the component mounts or page changes.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { loadReport() }, [loadReport])
+  const rows = useMemo(() => report.items.map((item) => ({ id: item.id, name: item.karyawan_nama || '-', date: formatDate(item.tanggal), checkIn: item.jam_masuk || '-', checkInStatus: readableStatus(item.status_masuk || item.jenis_cuti), checkOut: item.jam_keluar || '-', checkOutStatus: readableStatus(item.status_keluar || item.jenis_cuti), locationStatus: readableStatus(item.location_status_masuk), raw: item })).filter((row) => { const matchesName = !query.trim() || row.name.toLowerCase().includes(query.trim().toLowerCase()); const values = [statusKey(row.raw.status_masuk), statusKey(row.raw.status_keluar), statusKey(row.raw.location_status_masuk), statusKey(row.raw.location_status_keluar)]; const matchesStatus = status === 'Semua Status' || (status === 'Cuti' ? Boolean(row.raw.jenis_cuti) : values.includes(statusKey(status))); return matchesName && matchesStatus }), [query, report.items, status])
+  const exportReport = async (selection) => { setDownloadError(''); const params = {}; if (selection.period === 'Harian') params.start_date = params.end_date = dateParam(selection.dailyDate); if (selection.period === 'Mingguan') { const dates = [...selection.weeklyDates].sort((a, b) => a - b); params.start_date = dateParam(dates[0]); params.end_date = dateParam(dates.at(-1)) } if (selection.period === 'Bulanan') { const { year, month } = selection.selectedMonth; params.start_date = `${year}-${String(month + 1).padStart(2, '0')}-01`; params.end_date = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}` } if (selection.period === 'Tahunan') { params.start_date = `${selection.selectedYear}-01-01`; params.end_date = `${selection.selectedYear}-12-31` } try { const { file, contentDisposition } = await downloadAttendanceReport(params); const url = URL.createObjectURL(file); const link = document.createElement('a'); link.href = url; link.download = getDownloadName(contentDisposition); link.click(); URL.revokeObjectURL(url) } catch (error) { setDownloadError(error.response?.data?.message || 'Gagal mengunduh laporan presensi.') } }
+  const currentPage = report.meta?.page || page
+  const totalPages = report.meta?.total_pages || 1
+  return <div className="mx-auto max-w-[1040px]"><header className="mb-9"><h2 className="text-[26px] font-bold leading-none tracking-[-.5px] text-slate-900">Laporan Presensi</h2><p className="mt-2 text-[14px] text-slate-500">Lihat dan ekspor laporan presensi karyawan</p></header><section className="rounded-2xl bg-[#EF2427] p-5"><div className="flex flex-col gap-3 lg:flex-row"><label className="flex h-9 flex-1 items-center rounded-full bg-white px-6 sm:h-[36px]"><Search size={20} className="shrink-0 text-black" /><input value={query} onChange={(event) => setQuery(event.target.value)} className="ml-4 w-full bg-transparent text-[13px] outline-none placeholder:text-slate-900" placeholder="Cari" /></label><div className="relative"><button type="button" onClick={() => setFilterOpen((current) => !current)} className="flex h-9 w-full items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-black lg:w-[214px]">{status}<ChevronDown size={18} /></button>{filterOpen && <div className="absolute right-0 z-30 mt-3 w-[200px] rounded-2xl bg-white p-1.5 shadow-xl">{filters.map((item) => <button type="button" key={item} onClick={() => { setStatus(item); setFilterOpen(false) }} className={cn('block w-full rounded-xl px-3 py-2 text-left text-[13px] text-slate-700', status === item && 'bg-[#FDE5E5] font-semibold text-[#EF2427]')}>{item}</button>)}</div>}</div><button type="button" onClick={() => setDownloadOpen(true)} className="flex h-9 items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-black lg:w-[214px]">Unduh Laporan<ChevronDown size={18} /></button></div>{downloadError && <p className="mt-3 text-center text-[12px] font-medium text-white">{downloadError}</p>}</section><section className="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white"><h3 className="border-b border-slate-200 px-6 py-4 text-[23px] font-bold tracking-[-.5px] text-slate-900">Data Presensi Karyawan</h3>{errorMessage ? <div className="p-10 text-center text-sm text-[#EF2427]"><p>{errorMessage}</p><button type="button" onClick={loadReport} className="mt-3 font-semibold text-[#1E93AB]">Coba lagi</button></div> : <><div className="md:hidden">{isLoading ? <p className="p-10 text-center text-sm text-slate-500">Memuat data presensi...</p> : rows.length ? rows.map((row) => <MobileRow key={row.id} row={row} />) : <p className="p-10 text-center text-sm text-slate-500">Data presensi tidak ditemukan.</p>}</div><div className="hidden overflow-x-auto md:block"><table className="w-full min-w-[960px] text-left"><thead className="bg-[#F7F8FA] text-[12px] font-bold uppercase text-[#707989]"><tr><th className="px-6 py-4">Nama</th><th className="px-4 py-4">Tanggal</th><th className="px-4 py-4">Masuk</th><th className="px-4 py-4">Status Masuk</th><th className="px-4 py-4">Keluar</th><th className="px-4 py-4">Status Keluar</th><th className="px-4 py-4">Status Lokasi</th></tr></thead><tbody>{isLoading ? <tr><td colSpan="7" className="p-10 text-center text-sm text-slate-500">Memuat data presensi...</td></tr> : rows.length ? rows.map((row) => <tr key={row.id} className="border-t border-slate-200 text-[13px] text-black"><td className="w-[15%] px-6 py-6 font-bold uppercase leading-5">{row.name}</td><td className="px-4 py-6 font-semibold whitespace-nowrap">{row.date}</td><td className="px-4 py-6 font-semibold whitespace-nowrap">{row.checkIn}</td><td className="px-4 py-6"><StatusBadge>{row.checkInStatus}</StatusBadge></td><td className="px-4 py-6 font-semibold whitespace-nowrap">{row.checkOut}</td><td className="px-4 py-6"><StatusBadge>{row.checkOutStatus}</StatusBadge></td><td className="px-4 py-6">{row.locationStatus === '-' ? '-' : <StatusBadge>{row.locationStatus}</StatusBadge>}</td></tr>) : <tr><td colSpan="7" className="p-10 text-center text-sm text-slate-500">Data presensi tidak ditemukan.</td></tr>}</tbody></table></div>{totalPages > 1 && <div className="flex items-center justify-center gap-4 border-t border-slate-200 px-5 py-4 text-sm"><button type="button" disabled={currentPage <= 1} onClick={() => setPage((current) => current - 1)} className="font-semibold text-[#1E93AB] disabled:opacity-40">Sebelumnya</button><span className="text-slate-500">Halaman {currentPage} dari {totalPages}</span><button type="button" disabled={currentPage >= totalPages} onClick={() => setPage((current) => current + 1)} className="font-semibold text-[#1E93AB] disabled:opacity-40">Berikutnya</button></div>}</>}</section><DownloadReportDialog open={downloadOpen} onClose={() => setDownloadOpen(false)} onDownload={exportReport} /></div>
 }
