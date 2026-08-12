@@ -18,4 +18,16 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      authStorage.clearSession()
+      window.dispatchEvent(new Event('admin-auth:unauthorized'))
+    }
+
+    return Promise.reject(error)
+  },
+)
+
 export default apiClient
