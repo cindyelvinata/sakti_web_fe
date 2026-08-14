@@ -219,7 +219,9 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(true)
   const [isLeaveLoading, setIsLeaveLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [dashboardError, setDashboardError] = useState('')
+  const [attendanceError, setAttendanceError] = useState('')
+  const [leaveError, setLeaveError] = useState('')
   const availableAttendancePeriods = useMemo(() => [
     ...attendancePeriods
       .map((period) => ({ ...period, range: getAttendanceRange(period.value) }))
@@ -236,7 +238,7 @@ export default function DashboardPage() {
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true)
-    setErrorMessage('')
+    setDashboardError('')
 
     try {
       setDashboard(await getDashboard())
@@ -247,7 +249,7 @@ export default function DashboardPage() {
         return
       }
 
-      setErrorMessage(error.response?.data?.message || error.message || 'Gagal memuat data dashboard.')
+      setDashboardError(error.response?.data?.message || error.message || 'Gagal memuat data dashboard.')
     } finally {
       setIsLoading(false)
     }
@@ -255,7 +257,7 @@ export default function DashboardPage() {
 
   const loadAttendance = useCallback(async () => {
     setIsAttendanceLoading(true)
-    setErrorMessage('')
+    setAttendanceError('')
 
     try {
       const params = { limit: 100, start_date: dateParam(attendanceRange.startDate), end_date: dateParam(attendanceRange.endDate) }
@@ -274,7 +276,7 @@ export default function DashboardPage() {
         return
       }
 
-      setErrorMessage(error.response?.data?.message || error.message || 'Gagal memuat data presensi dashboard.')
+      setAttendanceError(error.response?.data?.message || error.message || 'Gagal memuat data presensi dashboard.')
     } finally {
       setIsAttendanceLoading(false)
     }
@@ -282,7 +284,7 @@ export default function DashboardPage() {
 
   const loadLeave = useCallback(async () => {
     setIsLeaveLoading(true)
-    setErrorMessage('')
+    setLeaveError('')
 
     try {
       const report = await getLeaveReport({ page: 1, limit: 100, start_date: dateParam(leaveRange.startDate), end_date: dateParam(leaveRange.endDate) })
@@ -294,7 +296,7 @@ export default function DashboardPage() {
         return
       }
 
-      setErrorMessage(error.response?.data?.message || error.message || 'Gagal memuat data cuti dashboard.')
+      setLeaveError(error.response?.data?.message || error.message || 'Gagal memuat data cuti dashboard.')
     } finally {
       setIsLeaveLoading(false)
     }
@@ -346,17 +348,15 @@ export default function DashboardPage() {
   return <>
     <DashboardHeader />
 
-    {errorMessage ? <section className="grid min-h-[300px] place-items-center"><div className="text-center"><p className="text-sm text-[#EF2427]">{errorMessage}</p><button type="button" onClick={loadDashboard} className="mt-4 text-sm font-semibold text-[#1E93AB]">Coba lagi</button></div></section> : <>
-      <section className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {isLoading ? Array.from({ length: 5 }, (_, index) => <StatisticCard key={index} label="Memuat data" value="..." />) : statistics.map((item) => <StatisticCard key={item.label} {...item} />)}
-      </section>
+    <section className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {isLoading ? Array.from({ length: 5 }, (_, index) => <StatisticCard key={index} label="Memuat data" value="..." />) : dashboardError ? <div className="rounded-[14px] border border-red-100 bg-red-50 p-5 text-sm text-[#EF2427] sm:col-span-2 lg:col-span-3 xl:col-span-5"><p>{dashboardError}</p><button type="button" onClick={loadDashboard} className="mt-3 font-semibold text-[#1E93AB]">Coba lagi</button></div> : statistics.map((item) => <StatisticCard key={item.label} {...item} />)}
+    </section>
 
-      <section className="mt-6 grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
-        <ChartCard title="Total Karyawan per Departemen" isLoading={isLoading} isEmpty={!isLoading && departmentData.length === 0}><HorizontalBarChart data={departmentData} /></ChartCard>
-        <ChartCard title="Total Pengajuan Cuti" isLoading={isLeaveLoading} isEmpty={false} action={leavePeriodFilter}><LeaveBarChart data={leaveData} /></ChartCard>
-        <ChartCard title="Presensi Masuk berdasarkan Status" isLoading={isAttendanceLoading} isEmpty={false} action={renderAttendancePeriodFilter()}><VerticalBarChart data={attendanceInData} series={attendanceInSeries} /></ChartCard>
-        <ChartCard title="Presensi Keluar berdasarkan Status" isLoading={isAttendanceLoading} isEmpty={false} action={renderAttendancePeriodFilter()}><VerticalBarChart data={attendanceOutData} series={attendanceOutSeries} /></ChartCard>
-      </section>
-    </>}
+    <section className="mt-6 grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-2">
+      <ChartCard title="Total Karyawan per Departemen" isLoading={isLoading} isEmpty={!isLoading && !dashboardError && departmentData.length === 0} errorMessage={dashboardError} onRetry={loadDashboard}><HorizontalBarChart data={departmentData} /></ChartCard>
+      <ChartCard title="Total Pengajuan Cuti" isLoading={isLeaveLoading} isEmpty={false} errorMessage={leaveError} onRetry={loadLeave} action={leavePeriodFilter}><LeaveBarChart data={leaveData} /></ChartCard>
+      <ChartCard title="Presensi Masuk berdasarkan Status" isLoading={isAttendanceLoading} isEmpty={false} errorMessage={attendanceError} onRetry={loadAttendance} action={renderAttendancePeriodFilter()}><VerticalBarChart data={attendanceInData} series={attendanceInSeries} /></ChartCard>
+      <ChartCard title="Presensi Keluar berdasarkan Status" isLoading={isAttendanceLoading} isEmpty={false} errorMessage={attendanceError} onRetry={loadAttendance} action={renderAttendancePeriodFilter()}><VerticalBarChart data={attendanceOutData} series={attendanceOutSeries} /></ChartCard>
+    </section>
   </>
 }
