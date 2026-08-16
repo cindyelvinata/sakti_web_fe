@@ -123,6 +123,11 @@ function isRecordInRange(record, { startDate, endDate }) {
   return date ? date >= startDate && date <= endDate : false
 }
 
+function isLeaveRecordInRange(record, { startDate, endDate }) {
+  const date = parseLocalDate(record?.tanggal_mulai || record?.tanggal || record?.created_at)
+  return date ? date >= startDate && date <= endDate : false
+}
+
 function totalPages(meta) {
   return Math.max(1, Number(meta?.total_pages ?? meta?.totalPages ?? meta?.last_page ?? 1) || 1)
 }
@@ -190,6 +195,22 @@ function aggregateLeave(records) {
   return data
 }
 
+function attendanceKpi(records) {
+  return records.reduce((result, record) => {
+    const checkInStatus = statusKey(record.status_masuk || record.jenis_cuti)
+    const checkOutStatus = statusKey(record.status_keluar || record.jenis_cuti)
+
+    if (checkInStatus === 'terlambat') result.terlambat += 1
+    if (checkOutStatus === 'lembur' || checkOutStatus === 'presensi_lembur') result.lembur += 1
+
+    return result
+  }, { terlambat: 0, lembur: 0 })
+}
+
+function approvedLeaveTotal(records) {
+  return records.filter((record) => statusKey(record.status) === 'disetujui').length
+}
+
 function AttendancePeriodFilter({ value, options, customDate, rangeLabel, onChange, onCustomDateChange }) {
   const isCustom = value === customAttendancePeriod.value
 
@@ -216,6 +237,8 @@ export default function DashboardPage() {
   const [leaveMonth, setLeaveMonth] = useState(() => monthValue(new Date()))
   const [attendanceData, setAttendanceData] = useState(() => ({ inData: emptyAttendanceIn(), outData: emptyAttendanceOut() }))
   const [leavePeriodData, setLeavePeriodData] = useState(() => emptyLeaveData())
+  const [attendancePeriodKpi, setAttendancePeriodKpi] = useState({ terlambat: 0, lembur: 0 })
+  const [leavePeriodKpi, setLeavePeriodKpi] = useState({ disetujui: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(true)
   const [isLeaveLoading, setIsLeaveLoading] = useState(true)
@@ -267,8 +290,10 @@ export default function DashboardPage() {
         ? await Promise.all(Array.from({ length: pageCount - 1 }, (_, index) => getAttendanceReport({ ...params, page: index + 2 })))
         : []
       const records = [firstPage, ...otherPages].flatMap((report) => report.items)
+      const periodRecords = records.filter((record) => isRecordInRange(record, attendanceRange))
 
-      setAttendanceData(aggregateAttendance(records.filter((record) => isRecordInRange(record, attendanceRange))))
+      setAttendanceData(aggregateAttendance(periodRecords))
+      setAttendancePeriodKpi(attendanceKpi(periodRecords))
     } catch (error) {
       if ([401, 403].includes(error.response?.status)) {
         authStorage.clearSession()
@@ -287,8 +312,17 @@ export default function DashboardPage() {
     setLeaveError('')
 
     try {
-      const report = await getLeaveReport({ page: 1, limit: 100, start_date: dateParam(leaveRange.startDate), end_date: dateParam(leaveRange.endDate) })
-      setLeavePeriodData(aggregateLeave(report.items))
+      const params = { limit: 100, start_date: dateParam(leaveRange.startDate), end_date: dateParam(leaveRange.endDate) }
+      const firstPage = await getLeaveReport({ ...params, page: 1 })
+      const pageCount = totalPages(firstPage.meta)
+      const otherPages = pageCount > 1
+        ? await Promise.all(Array.from({ length: pageCount - 1 }, (_, index) => getLeaveReport({ ...params, page: index + 2 })))
+        : []
+      const records = [firstPage, ...otherPages].flatMap((report) => report.items)
+      const periodRecords = records.filter((record) => isLeaveRecordInRange(record, leaveRange))
+
+      setLeavePeriodData(aggregateLeave(periodRecords))
+      setLeavePeriodKpi({ disetujui: approvedLeaveTotal(periodRecords) })
     } catch (error) {
       if ([401, 403].includes(error.response?.status)) {
         authStorage.clearSession()
@@ -300,7 +334,7 @@ export default function DashboardPage() {
     } finally {
       setIsLeaveLoading(false)
     }
-  }, [leaveRange.endDate, leaveRange.startDate, navigate])
+  }, [leaveRange, navigate])
 
   useEffect(() => {
     // The initial API request intentionally populates the dashboard after mount.
@@ -323,9 +357,9 @@ export default function DashboardPage() {
   const statistics = dashboard ? [
     { label: 'Total Karyawan', value: dashboard.total_karyawan },
     { label: 'Karyawan Aktif', value: dashboard.karyawan_aktif },
-    { label: 'Total Terlambat', value: dashboard.total_terlambat },
-    { label: 'Total Lembur', value: dashboard.total_lembur },
-    { label: 'Total Cuti Disetujui', value: dashboard.total_cuti_disetujui },
+    { label: 'Total Terlambat', value: isAttendanceLoading ? '...' : attendancePeriodKpi.terlambat },
+    { label: 'Total Lembur', value: isAttendanceLoading ? '...' : attendancePeriodKpi.lembur },
+    { label: 'Total Cuti Disetujui', value: isLeaveLoading ? '...' : leavePeriodKpi.disetujui },
   ] : []
 
   const departmentData = dashboard?.karyawan_per_dept
