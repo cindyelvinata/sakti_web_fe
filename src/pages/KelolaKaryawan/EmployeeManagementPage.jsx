@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ChevronDown, Plus, Search } from 'lucide-react'
 import EmployeeCreateDialog from '@/components/dialogs/EmployeeCreateDialog'
-import { createEmployee, getEmployees, updateEmployee } from '@/services/employeeService'
+import { createEmployee, getEmployees, updateEmployee, uploadEmployeePhoto, uploadEmployeeSignature } from '@/services/employeeService'
 import { authStorage } from '@/lib/authStorage'
 import { ROUTES } from '@/constants/routes'
 import { cn } from '@/lib/utils'
@@ -23,6 +23,7 @@ function titleCase(value) { return value ? String(value).split(/[_\s-]+/).map((p
 function positionLabel(value) { return positions.find((position) => position.value === value)?.label || titleCase(value) }
 function normalizeText(value) { return String(value ?? '').trim().toLowerCase() }
 function normalizeStatus(value) { return normalizeText(value).replace(/[\s-]+/g, '_') }
+function isActiveEmployee(employee) { return normalizeStatus(employee?.status_karyawan) === 'aktif' }
 function statusOrder(value) { return normalizeStatus(value) === 'aktif' ? 0 : 1 }
 function csvValue(value) { return `"${String(value ?? '').replace(/"/g, '""')}"` }
 function uniqueById(items) { const byId = new Map(); items.forEach((item) => { if (item?.id != null && !byId.has(String(item.id))) byId.set(String(item.id), item) }); return [...byId.values()] }
@@ -40,7 +41,7 @@ async function getAllEmployees(params) {
   return [firstPage, ...otherPages].flatMap((result) => result.items)
 }
 function buildCreatePayload(form) {
-  return {
+  const payload = {
     email: form.email,
     password: form.password,
     nama_lengkap: form.nama_lengkap,
@@ -48,8 +49,15 @@ function buildCreatePayload(form) {
     role: form.role,
     level_jabatan: form.level_jabatan,
     divisi: form.divisi,
-    unit: form.unit,
+    unit: form.unit || null,
   }
+
+  if (form.atasan_langsung_id) payload.atasan_langsung_id = form.atasan_langsung_id
+
+  return payload
+}
+function employeeId(employee) {
+  return employee?.id ?? employee?.karyawan_id
 }
 function toEmployeeRow(employee, nameById) {
   return {
@@ -87,7 +95,7 @@ export default function EmployeeManagementPage() {
   const [saveError, setSaveError] = useState('')
   const [exportMessage, setExportMessage] = useState('')
   const loadEmployees = useCallback(async () => { setIsLoading(true); setErrorMessage(''); try { const result = await getEmployees({ page, limit: 10, ...(query.trim() ? { search: query.trim() } : {}), ...(status === 'Semua Status' ? {} : { status: status.toLowerCase() }) }); setEmployees(result.items); setMeta(result.meta) } catch (error) { if ([401, 403].includes(error.response?.status)) { authStorage.clearSession(); navigate(ROUTES.login, { replace: true }); return } setErrorMessage(error.response?.data?.message || error.message || 'Gagal memuat data karyawan.') } finally { setIsLoading(false) } }, [navigate, page, query, status])
-  const loadManagers = useCallback(async () => { try { const candidates = await getAllEmployees({ role: 'atasan' }); const supervisors = candidates.filter((employee) => normalizeText(employee.role) === 'atasan'); setManagerCandidates(supervisors.length ? supervisors : candidates) } catch (error) { if ([401, 403].includes(error.response?.status)) { authStorage.clearSession(); navigate(ROUTES.login, { replace: true }) } } }, [navigate])
+  const loadManagers = useCallback(async () => { try { const candidates = await getAllEmployees({ status: 'aktif' }); const activeEmployees = candidates.filter(isActiveEmployee); setManagerCandidates(activeEmployees.length ? activeEmployees : candidates) } catch (error) { if ([401, 403].includes(error.response?.status)) { authStorage.clearSession(); navigate(ROUTES.login, { replace: true }) } } }, [navigate])
   // API load populates table state after mount, page, search, or status changes.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadEmployees() }, [loadEmployees])
@@ -96,7 +104,7 @@ export default function EmployeeManagementPage() {
   useEffect(() => { loadManagers() }, [loadManagers])
   const managerOptions = useMemo(() => {
     const byId = new Map()
-    ;[...managerCandidates, ...employees.filter((employee) => normalizeText(employee.role) === 'atasan')].forEach((employee) => {
+    ;[...managerCandidates, ...employees.filter(isActiveEmployee)].forEach((employee) => {
       if (employee?.id != null) byId.set(String(employee.id), employee)
     })
     return [...byId.values()].sort((first, second) => String(first.nama_lengkap || '').localeCompare(String(second.nama_lengkap || '')))
@@ -137,7 +145,40 @@ export default function EmployeeManagementPage() {
       setIsSaving(false)
     }
   }
-  const create = async (form) => { await createEmployee(buildCreatePayload(form)); await loadEmployees() }
+  const uploadCreateFiles = async (karyawanId, files) => {
+    const uploadErrors = {}
+
+    if (files?.photo) {
+      try {
+        await uploadEmployeePhoto(files.photo, karyawanId)
+      } catch (error) {
+        uploadErrors.photo = error.response?.data?.message || error.message || 'Foto gagal diupload.'
+      }
+    }
+
+    if (files?.signature) {
+      try {
+        await uploadEmployeeSignature(files.signature, karyawanId)
+      } catch (error) {
+        uploadErrors.signature = error.response?.data?.message || error.message || 'TTD gagal diupload.'
+      }
+    }
+
+    await loadEmployees()
+    return uploadErrors
+  }
+  const create = async (form, files) => {
+    const employee = await createEmployee(buildCreatePayload(form))
+    const karyawanId = employeeId(employee)
+
+    if (!karyawanId) {
+      await loadEmployees()
+      return { karyawanId: null, uploadErrors: files?.photo || files?.signature ? { create: 'Karyawan berhasil dibuat, tetapi ID karyawan tidak tersedia untuk upload file.' } : {} }
+    }
+
+    return { karyawanId, uploadErrors: await uploadCreateFiles(karyawanId, files) }
+  }
+  const retryCreateUpload = async (karyawanId, files) => ({ karyawanId, uploadErrors: await uploadCreateFiles(karyawanId, files) })
   const downloadCsv = async () => {
     setSaveError('')
     setExportMessage('')
@@ -178,8 +219,9 @@ export default function EmployeeManagementPage() {
   }
   const currentPage = meta.page || page
   const totalPages = meta.total_pages || 1
-  return <div className={cn('mx-auto', isEditMode ? 'max-w-none' : 'max-w-[1040px]')}><header className="mb-9"><h2 className="text-[26px] font-bold leading-none tracking-[-.5px] text-slate-900">Kelola Karyawan</h2><p className="mt-2 text-[14px] text-slate-500">Kelola data karyawan yang terdaftar dalam sistem</p></header><section className="rounded-2xl bg-[#EF2427] p-5"><div className="flex flex-col gap-3 lg:flex-row"><label className="flex h-9 flex-1 items-center rounded-full bg-white px-6 sm:h-[36px]"><Search size={20} className="shrink-0 text-black" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} className="ml-4 w-full bg-transparent text-[13px] outline-none placeholder:text-slate-900" placeholder="Cari" /></label><div className="relative"><button type="button" onClick={() => setFilterOpen((current) => !current)} className="flex h-9 w-full items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-black lg:w-[214px]">{status}<ChevronDown size={18} /></button>{filterOpen && <div className="absolute right-0 z-30 mt-3 w-[200px] rounded-2xl bg-white p-1.5 shadow-xl">{statusFilters.map((item) => <button key={item} type="button" onClick={() => { setStatus(item); setPage(1); setFilterOpen(false) }} className={cn('block w-full rounded-xl px-3 py-2 text-left text-[13px] text-slate-700', status === item && 'bg-[#FDE5E5] font-semibold text-[#EF2427]')}>{item}</button>)}</div>}</div><button type="button" onClick={downloadCsv} disabled={isLoading || isExporting} className="flex h-9 items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-black disabled:opacity-60 lg:w-[214px]">{isExporting ? 'Mengunduh...' : 'Unduh CSV'}<ChevronDown size={18} /></button></div></section><section className="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white"><h3 className="border-b border-slate-200 px-6 py-4 text-[23px] font-bold tracking-[-.5px] text-slate-900">Data Karyawan</h3>{errorMessage ? <div className="p-10 text-center text-sm text-[#EF2427]"><p>{errorMessage}</p><button type="button" onClick={loadEmployees} className="mt-3 font-semibold text-[#1E93AB]">Coba lagi</button></div> : <div className="overflow-x-auto">{isEditMode ? <table className="w-full min-w-[1630px] text-left"><colgroup><col className="w-[84px]" /><col className="w-[190px]" /><col className="w-[155px]" /><col className="w-[220px]" /><col className="w-[135px]" /><col className="w-[145px]" /><col className="w-[185px]" /><col className="w-[180px]" /><col className="w-[190px]" /><col className="w-[125px]" /></colgroup><thead className="bg-[#F7F8FA] text-[12px] font-bold uppercase text-[#707989]"><tr>{['Foto', 'Nama', 'No. Telp', 'Email', 'Role', 'Jabatan', 'Atasan', 'Divisi', 'Unit', 'Status'].map((heading) => <th key={heading} className="px-3 py-4 whitespace-nowrap">{heading}</th>)}</tr></thead><tbody>{rows.map((employee) => <tr key={employee.id} className="border-t border-slate-200"><td className="px-3 py-2"><div className="flex flex-col items-center text-[9px] text-slate-400">{employee.photo ? <img src={employee.photo} alt="" className="size-10 rounded-full object-cover" /> : <span className="size-10 rounded-full bg-slate-200" />}Foto</div></td><td className="px-3 py-2"><FieldInput value={employee.name} onChange={(value) => updateDraft(employee.id, 'name', value)} /></td><td className="px-3 py-2"><FieldInput value={employee.phone} onChange={(value) => updateDraft(employee.id, 'phone', value)} /></td><td className="px-3 py-2"><FieldInput value={employee.email} onChange={(value) => updateDraft(employee.id, 'email', value)} /></td><td className="px-3 py-2"><FieldSelect value={employee.role} onChange={(value) => updateDraft(employee.id, 'role', value)} options={roles} /></td><td className="px-3 py-2"><FieldSelect value={employee.position} onChange={(value) => updateDraft(employee.id, 'position', value)} options={positions} /></td><td className="px-3 py-2"><ManagerSelect value={employee.managerId} onChange={(value) => updateDraft(employee.id, 'managerId', value)} options={managerOptions} /></td><td className="px-3 py-2"><FieldInput value={employee.division} onChange={(value) => updateDraft(employee.id, 'division', value)} /></td><td className="px-3 py-2"><FieldInput value={employee.unit} onChange={(value) => updateDraft(employee.id, 'unit', value)} /></td><td className="px-3 py-2"><FieldSelect value={employee.status.toLowerCase()} onChange={(value) => updateDraft(employee.id, 'status', titleCase(value))} options={['aktif', 'nonaktif']} /></td></tr>)}</tbody></table> : <table className="w-full min-w-[780px] text-left"><thead className="bg-[#F7F8FA] text-[12px] font-bold uppercase text-[#707989]"><tr><th className="px-6 py-4">Nama</th><th className="px-4 py-4">Jabatan</th><th className="px-4 py-4">Divisi</th><th className="px-4 py-4">Unit</th><th className="px-4 py-4 text-right">Status</th></tr></thead><tbody>{isLoading ? <tr><td colSpan="5" className="p-10 text-center text-sm text-slate-500">Memuat data karyawan...</td></tr> : rows.length ? rows.map((employee) => <tr key={employee.id} className="border-t border-slate-200 text-[13px] text-black"><td className="w-[23%] px-6 py-4 font-bold uppercase">{employee.name}</td><td className="px-4 py-4 font-semibold">{positionLabel(employee.position)}</td><td className="px-4 py-4 font-semibold">{employee.division}</td><td className="px-4 py-4 font-semibold">{employee.unit}</td><td className="px-6 py-4 text-right"><StatusBadge status={employee.status} /></td></tr>) : <tr><td colSpan="5" className="p-10 text-center text-sm text-slate-500">Data karyawan tidak ditemukan.</td></tr>}</tbody></table>}</div>}</section>{!errorMessage && !isEditMode && totalPages > 1 && <div className="mt-4 flex justify-center gap-4 text-sm"><button type="button" disabled={currentPage <= 1} onClick={() => setPage((current) => current - 1)} className="font-semibold text-[#1E93AB] disabled:opacity-40">Sebelumnya</button><span>Halaman {currentPage} dari {totalPages}</span><button type="button" disabled={currentPage >= totalPages} onClick={() => setPage((current) => current + 1)} className="font-semibold text-[#1E93AB] disabled:opacity-40">Berikutnya</button></div>}<div className={cn('mt-7 flex gap-4', isEditMode ? 'justify-between' : 'justify-end')}>{isEditMode ? <><button type="button" onClick={() => setCreateOpen(true)} disabled={isSaving} className="grid size-9 place-items-center rounded-lg bg-[#EF2427] text-white shadow-sm hover:bg-[#d91c1f] disabled:opacity-50" aria-label="Tambah karyawan"><Plus size={25} /></button><div className="flex gap-4"><button type="button" onClick={save} disabled={isSaving} className="h-10 min-w-[140px] rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white disabled:opacity-50">{isSaving ? 'Menyimpan...' : 'Simpan'}</button><button type="button" onClick={cancel} disabled={isSaving} className="h-10 min-w-[140px] rounded-full border border-[#FFB1B1] bg-[#FDE8E8] px-7 text-[13px] font-bold text-[#EF2427] disabled:opacity-50">Batal</button></div></> : <button type="button" onClick={startEditing} disabled={isLoading} className="flex h-10 items-center gap-3 rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white disabled:opacity-50"><img src={penIcon} alt="" className="size-4 brightness-0 invert" />Edit Konfigurasi</button>}</div>{exportMessage && <p className="mt-3 text-right text-sm font-medium text-[#1E93AB]">{exportMessage}</p>}{saveError && <p className="mt-3 text-right text-sm font-medium text-[#EF2427]">{saveError}</p>}<EmployeeCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onCreate={create} /></div>
+  return <div className={cn('mx-auto', isEditMode ? 'max-w-none' : 'max-w-[1040px]')}><header className="mb-9"><h2 className="text-[26px] font-bold leading-none tracking-[-.5px] text-slate-900">Kelola Karyawan</h2><p className="mt-2 text-[14px] text-slate-500">Kelola data karyawan yang terdaftar dalam sistem</p></header><section className="rounded-2xl bg-[#EF2427] p-5"><div className="flex flex-col gap-3 lg:flex-row"><label className="flex h-9 flex-1 items-center rounded-full bg-white px-6 sm:h-[36px]"><Search size={20} className="shrink-0 text-black" /><input value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} className="ml-4 w-full bg-transparent text-[13px] outline-none placeholder:text-slate-900" placeholder="Cari" /></label><div className="relative"><button type="button" onClick={() => setFilterOpen((current) => !current)} className="flex h-9 w-full items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-black lg:w-[214px]">{status}<ChevronDown size={18} /></button>{filterOpen && <div className="absolute right-0 z-30 mt-3 w-[200px] rounded-2xl bg-white p-1.5 shadow-xl">{statusFilters.map((item) => <button key={item} type="button" onClick={() => { setStatus(item); setPage(1); setFilterOpen(false) }} className={cn('block w-full rounded-xl px-3 py-2 text-left text-[13px] text-slate-700', status === item && 'bg-[#FDE5E5] font-semibold text-[#EF2427]')}>{item}</button>)}</div>}</div><button type="button" onClick={downloadCsv} disabled={isLoading || isExporting} className="flex h-9 items-center justify-between rounded-full bg-white px-6 text-[13px] font-medium text-black disabled:opacity-60 lg:w-[214px]">{isExporting ? 'Mengunduh...' : 'Unduh CSV'}<ChevronDown size={18} /></button></div></section><section className="mt-9 overflow-hidden rounded-2xl border border-slate-200 bg-white"><h3 className="border-b border-slate-200 px-6 py-4 text-[23px] font-bold tracking-[-.5px] text-slate-900">Data Karyawan</h3>{errorMessage ? <div className="p-10 text-center text-sm text-[#EF2427]"><p>{errorMessage}</p><button type="button" onClick={loadEmployees} className="mt-3 font-semibold text-[#1E93AB]">Coba lagi</button></div> : <div className="overflow-x-auto">{isEditMode ? <table className="w-full min-w-[1630px] text-left"><colgroup><col className="w-[84px]" /><col className="w-[190px]" /><col className="w-[155px]" /><col className="w-[220px]" /><col className="w-[135px]" /><col className="w-[145px]" /><col className="w-[185px]" /><col className="w-[180px]" /><col className="w-[190px]" /><col className="w-[125px]" /></colgroup><thead className="bg-[#F7F8FA] text-[12px] font-bold uppercase text-[#707989]"><tr>{['Foto', 'Nama', 'No. Telp', 'Email', 'Role', 'Jabatan', 'Atasan', 'Divisi', 'Unit', 'Status'].map((heading) => <th key={heading} className="px-3 py-4 whitespace-nowrap">{heading}</th>)}</tr></thead><tbody>{rows.map((employee) => <tr key={employee.id} className="border-t border-slate-200"><td className="px-3 py-2"><div className="flex flex-col items-center text-[9px] text-slate-400">{employee.photo ? <img src={employee.photo} alt="" className="size-10 rounded-full object-cover" /> : <span className="size-10 rounded-full bg-slate-200" />}Foto</div></td><td className="px-3 py-2"><FieldInput value={employee.name} onChange={(value) => updateDraft(employee.id, 'name', value)} /></td><td className="px-3 py-2"><FieldInput value={employee.phone} onChange={(value) => updateDraft(employee.id, 'phone', value)} /></td><td className="px-3 py-2"><FieldInput value={employee.email} onChange={(value) => updateDraft(employee.id, 'email', value)} /></td><td className="px-3 py-2"><FieldSelect value={employee.role} onChange={(value) => updateDraft(employee.id, 'role', value)} options={roles} /></td><td className="px-3 py-2"><FieldSelect value={employee.position} onChange={(value) => updateDraft(employee.id, 'position', value)} options={positions} /></td><td className="px-3 py-2"><ManagerSelect value={employee.managerId} onChange={(value) => updateDraft(employee.id, 'managerId', value)} options={managerOptions.filter((manager) => String(manager.id) !== String(employee.id))} /></td><td className="px-3 py-2"><FieldInput value={employee.division} onChange={(value) => updateDraft(employee.id, 'division', value)} /></td><td className="px-3 py-2"><FieldInput value={employee.unit} onChange={(value) => updateDraft(employee.id, 'unit', value)} /></td><td className="px-3 py-2"><FieldSelect value={employee.status.toLowerCase()} onChange={(value) => updateDraft(employee.id, 'status', titleCase(value))} options={['aktif', 'nonaktif']} /></td></tr>)}</tbody></table> : <table className="w-full min-w-[780px] text-left"><thead className="bg-[#F7F8FA] text-[12px] font-bold uppercase text-[#707989]"><tr><th className="px-6 py-4">Nama</th><th className="px-4 py-4">Jabatan</th><th className="px-4 py-4">Divisi</th><th className="px-4 py-4">Unit</th><th className="px-4 py-4 text-right">Status</th></tr></thead><tbody>{isLoading ? <tr><td colSpan="5" className="p-10 text-center text-sm text-slate-500">Memuat data karyawan...</td></tr> : rows.length ? rows.map((employee) => <tr key={employee.id} className="border-t border-slate-200 text-[13px] text-black"><td className="w-[23%] px-6 py-4 font-bold uppercase">{employee.name}</td><td className="px-4 py-4 font-semibold">{positionLabel(employee.position)}</td><td className="px-4 py-4 font-semibold">{employee.division}</td><td className="px-4 py-4 font-semibold">{employee.unit}</td><td className="px-6 py-4 text-right"><StatusBadge status={employee.status} /></td></tr>) : <tr><td colSpan="5" className="p-10 text-center text-sm text-slate-500">Data karyawan tidak ditemukan.</td></tr>}</tbody></table>}</div>}</section>{!errorMessage && !isEditMode && totalPages > 1 && <div className="mt-4 flex justify-center gap-4 text-sm"><button type="button" disabled={currentPage <= 1} onClick={() => setPage((current) => current - 1)} className="font-semibold text-[#1E93AB] disabled:opacity-40">Sebelumnya</button><span>Halaman {currentPage} dari {totalPages}</span><button type="button" disabled={currentPage >= totalPages} onClick={() => setPage((current) => current + 1)} className="font-semibold text-[#1E93AB] disabled:opacity-40">Berikutnya</button></div>}<div className={cn('mt-7 flex gap-4', isEditMode ? 'justify-between' : 'justify-end')}>{isEditMode ? <><button type="button" onClick={() => setCreateOpen(true)} disabled={isSaving} className="grid size-9 place-items-center rounded-lg bg-[#EF2427] text-white shadow-sm hover:bg-[#d91c1f] disabled:opacity-50" aria-label="Tambah karyawan"><Plus size={25} /></button><div className="flex gap-4"><button type="button" onClick={save} disabled={isSaving} className="h-10 min-w-[140px] rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white disabled:opacity-50">{isSaving ? 'Menyimpan...' : 'Simpan'}</button><button type="button" onClick={cancel} disabled={isSaving} className="h-10 min-w-[140px] rounded-full border border-[#FFB1B1] bg-[#FDE8E8] px-7 text-[13px] font-bold text-[#EF2427] disabled:opacity-50">Batal</button></div></> : <button type="button" onClick={startEditing} disabled={isLoading} className="flex h-10 items-center gap-3 rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white disabled:opacity-50"><img src={penIcon} alt="" className="size-4 brightness-0 invert" />Edit Konfigurasi</button>}</div>{exportMessage && <p className="mt-3 text-right text-sm font-medium text-[#1E93AB]">{exportMessage}</p>}{saveError && <p className="mt-3 text-right text-sm font-medium text-[#EF2427]">{saveError}</p>}<EmployeeCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onCreate={create} onRetryUpload={retryCreateUpload} managerOptions={managerOptions} /></div>
 }
+
 
 
 

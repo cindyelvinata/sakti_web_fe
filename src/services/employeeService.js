@@ -24,3 +24,15 @@ export const createEmployee = (payload) => unwrap(apiClient.post('/api/admin/kar
 export const updateEmployee = (id, payload) => unwrap(apiClient.put(`/api/admin/karyawan/${id}`, payload), 'Gagal memperbarui karyawan.')
 
 export const deactivateEmployee = (id) => unwrap(apiClient.delete(`/api/admin/karyawan/${id}`), 'Gagal menonaktifkan karyawan.')
+
+function uploadImage(endpoint, file, karyawanId, fallbackMessage) {
+  const formData = new FormData()
+  formData.append('image', file)
+  formData.append('karyawan_id', karyawanId)
+
+  return unwrap(apiClient.post(endpoint, formData, { headers: { 'Content-Type': 'multipart/form-data' } }), fallbackMessage)
+}
+
+export const uploadEmployeePhoto = (file, karyawanId) => uploadImage('/api/upload/image', file, karyawanId, 'Gagal mengunggah foto karyawan.')
+
+export const uploadEmployeeSignature = (file, karyawanId) => uploadImage('/api/ttd/upload', file, karyawanId, 'Gagal mengunggah TTD karyawan.')
