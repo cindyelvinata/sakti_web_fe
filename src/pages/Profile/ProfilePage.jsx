@@ -61,6 +61,20 @@ function changedPayload(profile, draft) {
   }, {})
 }
 
+function syncSessionProfile(currentUser, profile) {
+  authStorage.setSession({
+    accessToken: authStorage.getAccessToken(),
+    user: {
+      ...currentUser,
+      nama_lengkap: profile.nama_lengkap,
+      name: profile.nama_lengkap,
+      email: profile.email,
+      foto_url: profile.foto_url,
+      level_jabatan: profile.level_jabatan,
+    },
+  })
+}
+
 function ProfileFieldInput({ fieldKey, value, onChange, disabled }) {
   if (fieldKey === 'level_jabatan') {
     return <select value={value ?? ''} onChange={(event) => onChange(event.target.value)} disabled={disabled} className="mt-0.5 w-full bg-transparent text-[15px] font-semibold text-black outline-none">
@@ -107,6 +121,7 @@ export default function ProfilePage() {
 
       setProfile(currentAdmin)
       setDraft(profileDraft(currentAdmin))
+      syncSessionProfile(currentUser, currentAdmin)
     } catch (error) {
       if ([401, 403].includes(error.response?.status)) {
         authStorage.clearSession()
@@ -155,12 +170,7 @@ export default function ProfilePage() {
 
       await updateEmployee(currentUser.id, payload)
 
-      if (payload.nama_lengkap || payload.email) {
-        authStorage.setSession({
-          accessToken: authStorage.getAccessToken(),
-          user: { ...currentUser, ...('nama_lengkap' in payload ? { nama_lengkap: payload.nama_lengkap, name: payload.nama_lengkap } : {}), ...('email' in payload ? { email: payload.email } : {}) },
-        })
-      }
+      syncSessionProfile(currentUser, { ...profile, ...payload })
 
       await loadProfile()
       setIsEditing(false)

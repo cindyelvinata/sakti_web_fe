@@ -51,15 +51,17 @@ function managerText(manager) {
 
 function ManagerCreateSelect({ value, onChange, options, disabled }) {
   const [query, setQuery] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
   const selected = options.find((manager) => String(manager.id) === String(value))
   const hasSearch = query.trim().length > 0
+  const inputValue = isSearching ? query : selected ? managerLabel(selected) : query
   const filteredOptions = useMemo(() => {
     const search = query.trim().toLowerCase()
     if (!search) return []
     return options.filter((manager) => managerText(manager).includes(search)).slice(0, 8)
   }, [options, query])
 
-  return <label className="relative text-[12px] font-semibold text-slate-700">Atasan<input value={query} onChange={(event) => setQuery(event.target.value)} disabled={disabled} placeholder={selected ? managerLabel(selected) : 'Cari nama/email atasan'} className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-[12px] font-normal outline-none focus:border-[#1E93AB]" />{selected && <button type="button" onClick={() => { onChange(''); setQuery('') }} disabled={disabled} className="mt-1 text-[11px] font-semibold text-[#EF2427]">Hapus pilihan: {managerLabel(selected)}</button>}{hasSearch && <div className="mt-2 max-h-[132px] overflow-y-auto rounded-lg border border-slate-200 bg-white p-1">{filteredOptions.length ? filteredOptions.map((manager) => <button key={manager.id} type="button" onClick={() => { onChange(String(manager.id)); setQuery('') }} disabled={disabled} className="block w-full rounded-md px-2 py-1.5 text-left text-[11px] font-normal text-slate-700 hover:bg-[#FDE5E5] disabled:opacity-60"><span className="block font-semibold">{managerLabel(manager)}</span>{manager.email && <span className="block text-[10px] text-slate-500">{manager.email}</span>}</button>) : <p className="px-2 py-2 text-[11px] font-normal text-slate-400">Atasan tidak ditemukan.</p>}</div>}</label>
+  return <label className="relative text-[12px] font-semibold text-slate-700">Atasan<input value={inputValue} onFocus={() => { if (selected) { setIsSearching(true); setQuery('') } }} onChange={(event) => { if (selected) onChange(''); setIsSearching(true); setQuery(event.target.value) }} disabled={disabled} placeholder="Cari nama/email atasan" className="mt-2 h-10 w-full rounded-lg border border-slate-200 px-3 text-[12px] font-normal text-black outline-none focus:border-[#1E93AB]" />{hasSearch && <div className="mt-2 max-h-[132px] overflow-y-auto rounded-lg border border-slate-200 bg-white p-1">{filteredOptions.length ? filteredOptions.map((manager) => <button key={manager.id} type="button" onClick={() => { onChange(String(manager.id)); setQuery(''); setIsSearching(false) }} disabled={disabled} className="block w-full rounded-md px-2 py-1.5 text-left text-[11px] font-normal text-slate-700 hover:bg-[#FDE5E5] disabled:opacity-60"><span className="block font-semibold">{managerLabel(manager)}</span>{manager.email && <span className="block text-[10px] text-slate-500">{manager.email}</span>}</button>) : <p className="px-2 py-2 text-[11px] font-normal text-slate-400">Atasan tidak ditemukan.</p>}</div>}</label>
 }
 
 function hasUploadErrors(errors) {
