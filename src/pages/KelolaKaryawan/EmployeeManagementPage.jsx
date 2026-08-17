@@ -30,7 +30,7 @@ function isActiveEmployee(employee) { return normalizeStatus(employee?.status_ka
 function statusOrder(value) { return normalizeStatus(value) === 'aktif' ? 0 : 1 }
 function csvValue(value) { return `"${String(value ?? '').replace(/"/g, '""')}"` }
 function uniqueById(items) { const byId = new Map(); items.forEach((item) => { if (item?.id != null && !byId.has(String(item.id))) byId.set(String(item.id), item) }); return [...byId.values()] }
-function signatureUrl(employee) { return employee?.url_tanda_tangan || employee?.tanda_tangan_url || employee?.ttd_url || employee?.tanda_tangan?.url_tanda_tangan || employee?.tanda_tangan?.url || '' }
+function signatureUrl(employee) { return employee?.tanda_tangan?.url_tanda_tangan || employee?.tanda_tangan?.url || employee?.url_tanda_tangan || employee?.tanda_tangan_url || employee?.ttd_url || '' }
 function fileError(file, types, maxSize, label) {
   if (!file) return ''
   if (!types.includes(file.type)) return `${label} harus berformat ${label === 'Foto' ? 'jpg, png, jpeg, atau webp' : 'png, jpg, atau jpeg'}.`
