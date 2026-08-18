@@ -12,8 +12,13 @@ function asTime(value) { return value ? String(value).slice(0, 5) : '' }
 function asDate(value) { return value ? String(value).slice(0, 10) : '' }
 function displayDate(value) { const [year, month, day] = asDate(value).split('-'); return year ? `${Number(month)}/${Number(day)}/${year}` : '-' }
 function holidayType(value) { return value === 'cuti_bersama' ? 'Cuti Bersama' : 'Nasional' }
-function toHolidayDraft(item) { return { ...item, tanggal: asDate(item.tanggal), jenis: item.jenis || 'nasional', aktif: Boolean(item.aktif) } }
-function holidayPayload(item) { return { tanggal: item.tanggal, nama: item.nama, jenis: item.jenis, aktif: Boolean(item.aktif) } }
+function activeValue(value) {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') return value.trim().toLowerCase() === 'true' || value.trim() === '1'
+  return value === 1
+}
+function toHolidayDraft(item) { return { ...item, tanggal: asDate(item.tanggal), jenis: item.jenis || 'nasional', aktif: activeValue(item.aktif) } }
+function holidayPayload(item) { return { tanggal: item.tanggal, nama: item.nama, jenis: item.jenis, aktif: activeValue(item.aktif) } }
 
 export default function SettingsPage() {
   const [tab, setTab] = useState('configuration')

@@ -285,7 +285,7 @@ export default function EmployeeManagementPage() {
       const filteredEmployees = uniqueById(await getAllEmployees({ ...(query.trim() ? { search: query.trim() } : {}), ...(status === 'Semua Status' ? {} : { status: status.toLowerCase() }) }))
 
       if (!filteredEmployees.length) {
-        setSaveError('Tidak ada data karyawan untuk filter yang dipilih.')
+        setSaveError('Tidak ada data untuk diunduh.')
         return
       }
 
