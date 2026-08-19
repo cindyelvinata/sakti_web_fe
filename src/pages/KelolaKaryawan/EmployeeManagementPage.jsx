@@ -9,7 +9,7 @@ import penIcon from '@/assets/icons/pen.svg'
 import { useNavigate } from 'react-router-dom'
 
 const roles = ['karyawan', 'atasan', 'admin', 'hrd']
-const roleFilters = [{ label: 'Semua Role', value: '' }, ...roles.map((role) => ({ label: titleCase(role), value: role }))]
+const roleFilters = [{ label: 'Semua Role', value: '' }, { label: 'Atasan', value: 'atasan' }, { label: 'HRD', value: 'hrd' }, { label: 'Karyawan', value: 'karyawan' }]
 const positions = [
   { label: 'Staff', value: 'staff' },
   { label: 'Kepala Unit', value: 'ka_unit' },
