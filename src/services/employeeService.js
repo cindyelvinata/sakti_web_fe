@@ -1,4 +1,5 @@
 import apiClient from '@/lib/apiClient'
+import { compressEmployeeUploadImage } from '@/lib/imageCompression'
 
 async function unwrap(request, fallbackMessage) {
   const { data } = await request
@@ -25,14 +26,15 @@ export const updateEmployee = (id, payload) => unwrap(apiClient.put(`/api/admin/
 
 export const deactivateEmployee = (id) => unwrap(apiClient.delete(`/api/admin/karyawan/${id}`), 'Gagal menonaktifkan karyawan.')
 
-function uploadImage(endpoint, file, karyawanId, fallbackMessage) {
+async function uploadImage(endpoint, file, karyawanId, fallbackMessage, kind) {
+  const uploadFile = await compressEmployeeUploadImage(file, kind)
   const formData = new FormData()
-  formData.append('image', file)
+  formData.append('image', uploadFile)
   formData.append('karyawan_id', karyawanId)
 
   return unwrap(apiClient.post(endpoint, formData, { headers: { 'Content-Type': 'multipart/form-data' } }), fallbackMessage)
 }
 
-export const uploadEmployeePhoto = (file, karyawanId) => uploadImage('/api/upload/image', file, karyawanId, 'Gagal mengunggah foto karyawan.')
+export const uploadEmployeePhoto = (file, karyawanId) => uploadImage('/api/upload/image', file, karyawanId, 'Gagal mengunggah foto karyawan.', 'photo')
 
-export const uploadEmployeeSignature = (file, karyawanId) => uploadImage('/api/ttd/upload', file, karyawanId, 'Gagal mengunggah TTD karyawan.')
+export const uploadEmployeeSignature = (file, karyawanId) => uploadImage('/api/ttd/upload', file, karyawanId, 'Gagal mengunggah TTD karyawan.', 'signature')
