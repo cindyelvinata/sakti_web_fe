@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import StatisticCard from '@/components/cards/StatisticCard'
 import ChartCard from '@/components/cards/ChartCard'
@@ -215,18 +216,24 @@ function AttendancePeriodFilter({ value, options, customDate, rangeLabel, onChan
   const isCustom = value === customAttendancePeriod.value
 
   return <div className="flex min-w-0 flex-col gap-2 sm:items-end">
-    <select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 max-w-full rounded-full border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-700 outline-none focus:border-[#1E93AB]">
-      {options.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
-    </select>
+    <div className="relative inline-flex max-w-full">
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 max-w-full appearance-none rounded-full border border-slate-200 bg-white py-0 pr-8 pl-4 text-[12px] font-medium text-slate-700 outline-none focus:border-[#1E93AB]">
+        {options.map((period) => <option key={period.value} value={period.value}>{period.label}</option>)}
+      </select>
+      <ChevronDown size={14} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-slate-500" />
+    </div>
     {isCustom ? <input type="date" value={customDate} onChange={(event) => onCustomDateChange(event.target.value)} className="h-9 min-w-0 rounded-full border border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 outline-none focus:border-[#1E93AB]" /> : null}
     <span className="max-w-full truncate text-[11px] font-medium text-slate-500">{rangeLabel}</span>
   </div>
 }
 
 function MonthPeriodFilter({ value, options, onChange }) {
-  return <select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 max-w-full rounded-full border border-slate-200 bg-white px-4 text-[12px] font-medium text-slate-700 outline-none focus:border-[#1E93AB]">
-    {options.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}
-  </select>
+  return <div className="relative inline-flex max-w-full">
+    <select value={value} onChange={(event) => onChange(event.target.value)} className="h-9 max-w-full appearance-none rounded-full border border-slate-200 bg-white py-0 pr-8 pl-4 text-[12px] font-medium text-slate-700 outline-none focus:border-[#1E93AB]">
+      {options.map((month) => <option key={month.value} value={month.value}>{month.label}</option>)}
+    </select>
+    <ChevronDown size={14} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-slate-500" />
+  </div>
 }
 
 export default function DashboardPage() {

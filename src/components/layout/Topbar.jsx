@@ -28,7 +28,7 @@ export default function Topbar({ onMenuClick }) {
     <div className="flex min-w-0 items-center">
       <Button className="mr-3 p-2 lg:hidden" onClick={onMenuClick} aria-label="Buka menu"><Menu /></Button>
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-bold leading-6 text-slate-900 sm:text-2xl">Monitoring SAKTI</h1>
+        <h1 className="truncate text-xl font-bold leading-11 text-slate-900 sm:text-2xl">Monitoring SAKTI</h1>
         <p className="text-xs text-slate-500">{date}</p>
       </div>
     </div>
