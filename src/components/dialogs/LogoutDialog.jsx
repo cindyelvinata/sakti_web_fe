@@ -1,3 +1,61 @@
-import { LogOut,X } from 'lucide-react'
-import { useEffect } from 'react'
-export default function LogoutDialog({open,onClose,onConfirm}){useEffect(()=>{const keydown=event=>{if(event.key==='Escape')onClose()};if(open)window.addEventListener('keydown',keydown);return()=>window.removeEventListener('keydown',keydown)},[open,onClose]);if(!open)return null;return <div className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-5" role="presentation" onMouseDown={onClose}><section role="dialog" aria-modal="true" aria-labelledby="logout-title" className="relative w-full max-w-[345px] rounded-2xl bg-white px-6 py-6 text-center shadow-2xl" onMouseDown={event=>event.stopPropagation()}><button type="button" aria-label="Tutup" onClick={onClose} className="absolute right-4 top-4 text-slate-300 hover:text-slate-600"><X size={18}/></button><div className="mx-auto grid size-16 place-items-center rounded-full bg-[#FDE7E7] text-[#EF2427]"><LogOut size={31} strokeWidth={2.4}/></div><h2 id="logout-title" className="mx-auto mt-5 max-w-[280px] text-[20px] font-semibold leading-7 text-[#302A1B]">Apakah Anda yakin ingin keluar dari web ini?</h2><div className="mt-7 grid grid-cols-2 gap-3"><button type="button" onClick={onConfirm} className="h-12 rounded-full border border-[#FFAAAA] bg-[#FDE1E1] text-[15px] font-semibold text-[#EF2427] transition hover:bg-[#ffd1d1]">Ya</button><button type="button" onClick={onClose} className="h-12 rounded-full bg-[#EF2427] text-[15px] font-semibold text-white transition hover:bg-[#d91c1f]">Tidak</button></div></section></div>}
+import { LogOut, X } from "lucide-react";
+import { useEffect } from "react";
+export default function LogoutDialog({ open, onClose, onConfirm }) {
+  useEffect(() => {
+    const keydown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    if (open) window.addEventListener("keydown", keydown);
+    return () => window.removeEventListener("keydown", keydown);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/35 p-5"
+      role="presentation"
+      onMouseDown={onClose}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-title"
+        className="relative w-full max-w-[345px] rounded-2xl bg-white px-6 py-6 text-center shadow-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          aria-label="Tutup"
+          onClick={onClose}
+          className="absolute right-4 top-4 text-slate-300 hover:text-slate-600"
+        >
+          <X size={18} />
+        </button>
+        <div className="mx-auto grid size-16 place-items-center rounded-full bg-[#FDE7E7] text-[#EF2427]">
+          <LogOut size={31} strokeWidth={2.4} />
+        </div>
+        <h2
+          id="logout-title"
+          className="mx-auto mt-5 max-w-[280px] text-[20px] font-semibold leading-7 text-[#302A1B]"
+        >
+          Apakah Anda yakin ingin keluar dari web ini?
+        </h2>
+        <div className="mt-7 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-12 rounded-full border border-[#FFAAAA] bg-[#FDE1E1] text-[15px] font-semibold text-[#EF2427] transition hover:bg-[#ffd1d1]"
+          >
+            Ya
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 rounded-full bg-[#EF2427] text-[15px] font-semibold text-white transition hover:bg-[#d91c1f]"
+          >
+            Tidak
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}

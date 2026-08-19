@@ -1,6 +1,74 @@
-import { BriefcaseBusiness, CalendarCheck2, Clock3, UsersRound, UserRoundCheck } from 'lucide-react'
-export const statistics = [{ label: 'Total Karyawan', value: '44', change: '+2', icon: UsersRound, trend: 'up' },{ label: 'Karyawan Aktif', value: '43', change: '+3', icon: UserRoundCheck, trend: 'up' },{ label: 'Total Terlambat', value: '12', change: '-4', icon: Clock3, trend: 'down' },{ label: 'Total Lembur', value: '5', change: '+3', icon: BriefcaseBusiness, trend: 'up' },{ label: 'Total Cuti Disetujui', value: '8', change: '-2', icon: CalendarCheck2, trend: 'down' }]
-export const departmentData = [{name:'Service',total:14},{name:'Construction Network',total:12},{name:'Access - Multimedia & Digital',total:10},{name:'Admin Support',total:8},{name:'Construction - Muwark Access',total:7},{name:'Access & Connectivity',total:13},{name:'Admin Support - Simpan Pinjam',total:15},{name:'Construction Network Access',total:14}]
-export const attendanceInData = [{day:'Sen',tepatWaktu:42,terlambat:4,belumPresensi:3},{day:'Sel',tepatWaktu:45,terlambat:2,belumPresensi:2},{day:'Rab',tepatWaktu:40,terlambat:6,belumPresensi:3},{day:'Kam',tepatWaktu:44,terlambat:3,belumPresensi:2},{day:'Jum',tepatWaktu:38,terlambat:5,belumPresensi:5}]
-export const attendanceOutData = [{day:'Sen',presensiKeluar:19,presensiLembur:4,belumPresensi:2},{day:'Sel',presensiKeluar:30,presensiLembur:5,belumPresensi:2},{day:'Rab',presensiKeluar:40,presensiLembur:10,belumPresensi:3},{day:'Kam',presensiKeluar:23,presensiLembur:3,belumPresensi:2},{day:'Jum',presensiKeluar:38,presensiLembur:14,belumPresensi:5}]
-export const leaveData = [{status:'Disetujui',total:4},{status:'Ditolak',total:3.3},{status:'Menunggu',total:3},{status:'Dibatalkan',total:2.6}]
+import {
+  BriefcaseBusiness,
+  CalendarCheck2,
+  Clock3,
+  UsersRound,
+  UserRoundCheck,
+} from "lucide-react";
+export const statistics = [
+  {
+    label: "Total Karyawan",
+    value: "44",
+    change: "+2",
+    icon: UsersRound,
+    trend: "up",
+  },
+  {
+    label: "Karyawan Aktif",
+    value: "43",
+    change: "+3",
+    icon: UserRoundCheck,
+    trend: "up",
+  },
+  {
+    label: "Total Terlambat",
+    value: "12",
+    change: "-4",
+    icon: Clock3,
+    trend: "down",
+  },
+  {
+    label: "Total Lembur",
+    value: "5",
+    change: "+3",
+    icon: BriefcaseBusiness,
+    trend: "up",
+  },
+  {
+    label: "Total Cuti Disetujui",
+    value: "8",
+    change: "-2",
+    icon: CalendarCheck2,
+    trend: "down",
+  },
+];
+export const departmentData = [
+  { name: "Service", total: 14 },
+  { name: "Construction Network", total: 12 },
+  { name: "Access - Multimedia & Digital", total: 10 },
+  { name: "Admin Support", total: 8 },
+  { name: "Construction - Muwark Access", total: 7 },
+  { name: "Access & Connectivity", total: 13 },
+  { name: "Admin Support - Simpan Pinjam", total: 15 },
+  { name: "Construction Network Access", total: 14 },
+];
+export const attendanceInData = [
+  { day: "Sen", tepatWaktu: 42, terlambat: 4, belumPresensi: 3 },
+  { day: "Sel", tepatWaktu: 45, terlambat: 2, belumPresensi: 2 },
+  { day: "Rab", tepatWaktu: 40, terlambat: 6, belumPresensi: 3 },
+  { day: "Kam", tepatWaktu: 44, terlambat: 3, belumPresensi: 2 },
+  { day: "Jum", tepatWaktu: 38, terlambat: 5, belumPresensi: 5 },
+];
+export const attendanceOutData = [
+  { day: "Sen", presensiKeluar: 19, presensiLembur: 4, belumPresensi: 2 },
+  { day: "Sel", presensiKeluar: 30, presensiLembur: 5, belumPresensi: 2 },
+  { day: "Rab", presensiKeluar: 40, presensiLembur: 10, belumPresensi: 3 },
+  { day: "Kam", presensiKeluar: 23, presensiLembur: 3, belumPresensi: 2 },
+  { day: "Jum", presensiKeluar: 38, presensiLembur: 14, belumPresensi: 5 },
+];
+export const leaveData = [
+  { status: "Disetujui", total: 4 },
+  { status: "Ditolak", total: 3.3 },
+  { status: "Menunggu", total: 3 },
+  { status: "Dibatalkan", total: 2.6 },
+];

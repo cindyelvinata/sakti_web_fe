@@ -1,4 +1,77 @@
-import { Bar,BarChart,CartesianGrid,Legend,ResponsiveContainer,Tooltip,XAxis,YAxis } from 'recharts'
-const colors=['#1E93AB','#EF2427','#D9DEE7'];const label={fill:'#A9B3C1',fontSize:10}
-function yAxis(data,series){const max=Math.max(0,...(Array.isArray(data)?data.flatMap((row)=>series.map((item)=>Number(row?.[item.key])||0)):[]));const axisMax=Math.max(50,Math.ceil(max/10)*10);return {axisMax,ticks:Array.from({length:axisMax/10+1},(_,index)=>index*10)}}
-export default function VerticalBarChart({data,series}){const axis=yAxis(data,series);return <ResponsiveContainer width="100%" height="100%"><BarChart data={data} margin={{left:-8,right:10,top:8,bottom:0}} barCategoryGap="18%"><CartesianGrid vertical={false} stroke="#E8EDF2" strokeDasharray="3 3"/><XAxis dataKey="day" axisLine={false} tickLine={false} tick={label}/><YAxis domain={[0,axis.axisMax]} ticks={axis.ticks} axisLine={false} tickLine={false} tick={label} allowDecimals={false}/><Tooltip cursor={{fill:'#F7FAFC'}} contentStyle={{border:'1px solid #E1E6EC',borderRadius:10,fontSize:12}}/><Legend iconType="square" iconSize={10} wrapperStyle={{fontSize:10,paddingTop:12,color:'#6B7280'}}/>{series.map((item,index)=><Bar key={item.key} dataKey={item.key} name={item.label} fill={colors[index]} radius={[5,5,0,0]} barSize={18}/>)}</BarChart></ResponsiveContainer>}
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+const colors = ["#1E93AB", "#EF2427", "#D9DEE7"];
+const label = { fill: "#A9B3C1", fontSize: 10 };
+function yAxis(data, series) {
+  const max = Math.max(
+    0,
+    ...(Array.isArray(data)
+      ? data.flatMap((row) =>
+          series.map((item) => Number(row?.[item.key]) || 0),
+        )
+      : []),
+  );
+  const axisMax = Math.max(50, Math.ceil(max / 10) * 10);
+  return {
+    axisMax,
+    ticks: Array.from({ length: axisMax / 10 + 1 }, (_, index) => index * 10),
+  };
+}
+export default function VerticalBarChart({ data, series }) {
+  const axis = yAxis(data, series);
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart
+        data={data}
+        margin={{ left: -8, right: 10, top: 8, bottom: 0 }}
+        barCategoryGap="18%"
+      >
+        <CartesianGrid
+          vertical={false}
+          stroke="#E8EDF2"
+          strokeDasharray="3 3"
+        />
+        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={label} />
+        <YAxis
+          domain={[0, axis.axisMax]}
+          ticks={axis.ticks}
+          axisLine={false}
+          tickLine={false}
+          tick={label}
+          allowDecimals={false}
+        />
+        <Tooltip
+          cursor={{ fill: "#F7FAFC" }}
+          contentStyle={{
+            border: "1px solid #E1E6EC",
+            borderRadius: 10,
+            fontSize: 12,
+          }}
+        />
+        <Legend
+          iconType="square"
+          iconSize={10}
+          wrapperStyle={{ fontSize: 10, paddingTop: 12, color: "#6B7280" }}
+        />
+        {series.map((item, index) => (
+          <Bar
+            key={item.key}
+            dataKey={item.key}
+            name={item.label}
+            fill={colors[index]}
+            radius={[5, 5, 0, 0]}
+            barSize={18}
+          />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}

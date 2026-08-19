@@ -1,1 +1,12 @@
-export default function DashboardHeader(){return <div className="mb-7"><h2 className="text-2xl font-bold text-slate-900 sm:text-[26px]">Selamat Datang, Admin!</h2><p className="mt-1 text-sm text-slate-500">Lihat ringkasan aktivitas presensi dan cuti karyawan.</p></div>}
+export default function DashboardHeader() {
+  return (
+    <div className="mb-7">
+      <h2 className="text-2xl font-bold text-slate-900 sm:text-[26px]">
+        Selamat Datang, Admin!
+      </h2>
+      <p className="mt-1 text-sm text-slate-500">
+        Lihat ringkasan aktivitas presensi dan cuti karyawan.
+      </p>
+    </div>
+  );
+}

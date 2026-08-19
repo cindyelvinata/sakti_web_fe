@@ -1,3 +1,58 @@
-import { Bar,BarChart,CartesianGrid,ResponsiveContainer,Tooltip,XAxis,YAxis } from 'recharts'
-const tickValues=[0,5,10,15,20]
-export default function LeaveBarChart({data}){return <ResponsiveContainer width="100%" height="100%"><BarChart data={data} layout="vertical" margin={{left:0,right:18,top:8,bottom:4}}><CartesianGrid horizontal={false} stroke="#E8EDF2" strokeDasharray="3 3"/><XAxis type="number" domain={[0,20]} ticks={tickValues} axisLine={false} tickLine={false} tick={{fill:'#A9B3C1',fontSize:10}} allowDecimals={false}/><YAxis type="category" dataKey="status" width={104} axisLine={false} tickLine={false} tick={{fill:'#A9B3C1',fontSize:10}}/><Tooltip cursor={{fill:'#F7FAFC'}} contentStyle={{border:'1px solid #E1E6EC',borderRadius:10,fontSize:12}}/><Bar dataKey="total" radius={[0,4,4,0]} fill="#B7DFE9" barSize={18}/></BarChart></ResponsiveContainer>}
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+const tickValues = [0, 5, 10, 15, 20];
+export default function LeaveBarChart({ data }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart
+        data={data}
+        layout="vertical"
+        margin={{ left: 0, right: 18, top: 8, bottom: 4 }}
+      >
+        <CartesianGrid
+          horizontal={false}
+          stroke="#E8EDF2"
+          strokeDasharray="3 3"
+        />
+        <XAxis
+          type="number"
+          domain={[0, 20]}
+          ticks={tickValues}
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: "#A9B3C1", fontSize: 10 }}
+          allowDecimals={false}
+        />
+        <YAxis
+          type="category"
+          dataKey="status"
+          width={104}
+          axisLine={false}
+          tickLine={false}
+          tick={{ fill: "#A9B3C1", fontSize: 10 }}
+        />
+        <Tooltip
+          cursor={{ fill: "#F7FAFC" }}
+          contentStyle={{
+            border: "1px solid #E1E6EC",
+            borderRadius: 10,
+            fontSize: 12,
+          }}
+        />
+        <Bar
+          dataKey="total"
+          radius={[0, 4, 4, 0]}
+          fill="#B7DFE9"
+          barSize={18}
+        />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
