@@ -33,10 +33,13 @@ export default function SettingsPage() {
   const [logoFile, setLogoFile] = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
   const [isSavingConfiguration, setIsSavingConfiguration] = useState(false)
+  const [configurationLoadingLabel, setConfigurationLoadingLabel] = useState('')
   const [holidays, setHolidays] = useState([])
   const [holidayDraft, setHolidayDraft] = useState([])
   const [editingHolidays, setEditingHolidays] = useState(false)
   const [holidayCreateOpen, setHolidayCreateOpen] = useState(false)
+  const [isSavingHolidays, setIsSavingHolidays] = useState(false)
+  const [deletingHolidayId, setDeletingHolidayId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [actionError, setActionError] = useState('')
@@ -94,9 +97,11 @@ export default function SettingsPage() {
   const saveConfiguration = async () => {
     setActionError('')
     setIsSavingConfiguration(true)
+    setConfigurationLoadingLabel(logoFile ? 'Mengupload...' : 'Menyimpan...')
 
     try {
       const logoUrl = logoFile ? await uploadWorkConfigurationLogo(logoFile) : draft.logo_kantor
+      setConfigurationLoadingLabel('Menyimpan...')
       const payload = {
         nama_kantor: draft.nama_kantor,
         lat_kantor: Number(draft.lat_kantor),
@@ -116,6 +121,7 @@ export default function SettingsPage() {
       setActionError(error.response?.data?.message || error.message || 'Gagal menyimpan konfigurasi kerja.')
     } finally {
       setIsSavingConfiguration(false)
+      setConfigurationLoadingLabel('')
     }
   }
 
@@ -123,6 +129,7 @@ export default function SettingsPage() {
   const startHolidayEdit = () => { setHolidayDraft(holidays.map(toHolidayDraft)); setEditingHolidays(true); setActionError('') }
   const saveHolidays = async () => {
     setActionError('')
+    setIsSavingHolidays(true)
 
     try {
       const updates = holidayDraft.filter((draftItem) => {
@@ -135,10 +142,12 @@ export default function SettingsPage() {
       setEditingHolidays(false)
     } catch (error) {
       setActionError(error.response?.data?.message || error.message || 'Gagal menyimpan hari libur.')
+    } finally {
+      setIsSavingHolidays(false)
     }
   }
   const create = async (holiday) => { setActionError(''); await createHoliday({ tanggal: holiday.date, nama: holiday.name, jenis: holiday.type === 'Cuti Bersama' ? 'cuti_bersama' : 'nasional', aktif: true }); await load() }
-  const removeHoliday = async (id) => { setActionError(''); try { await deleteHoliday(id); await load() } catch (error) { setActionError(error.response?.data?.message || error.message || 'Gagal menghapus hari libur.') } }
+  const removeHoliday = async (id) => { setActionError(''); setDeletingHolidayId(id); try { await deleteHoliday(id); await load() } catch (error) { setActionError(error.response?.data?.message || error.message || 'Gagal menghapus hari libur.') } finally { setDeletingHolidayId(null) } }
   const logoSrc = logoPreview || draft.logo_kantor || configuration.logo_kantor
 
   return <div className="max-w-[1120px]">
@@ -173,7 +182,7 @@ export default function SettingsPage() {
           </div>
         </div>
         {editingConfiguration && <div className="mt-5 flex justify-center gap-4">
-          <button disabled={isSavingConfiguration} className="h-12 min-w-40 rounded-full bg-[#EF2427] px-7 text-sm font-semibold text-white disabled:opacity-60">{isSavingConfiguration ? 'Menyimpan...' : 'Simpan'}</button>
+          <button disabled={isSavingConfiguration} className="h-12 min-w-40 rounded-full bg-[#EF2427] px-7 text-sm font-semibold text-white disabled:opacity-60">{configurationLoadingLabel || 'Simpan'}</button>
           <button type="button" onClick={() => { setDraft(configuration); clearLogoSelection(); setEditingConfiguration(false) }} disabled={isSavingConfiguration} className="h-12 min-w-40 rounded-full border border-red-200 bg-red-50 px-7 text-sm font-semibold text-[#EF2427] disabled:opacity-60">Batal</button>
         </div>}
       </form>
@@ -186,16 +195,16 @@ export default function SettingsPage() {
             <thead className="bg-[#F7F8FA] text-[12px] font-bold uppercase text-[#707989]"><tr><th className="px-6 py-4">Nomor</th><th className="px-5 py-4">Tanggal</th><th className="px-5 py-4">Nama</th><th className="px-5 py-4">Jenis Cuti</th><th className="px-5 py-4">Aktif</th>{editingHolidays && <th className="px-5 py-4 text-center">Aksi</th>}</tr></thead>
             <tbody>{(editingHolidays ? holidayDraft : holidays).map((holiday, index) => <tr key={holiday.id} className="border-t border-slate-200 text-[13px] text-black">
               <td className="px-6 py-4 font-semibold">{index + 1}</td>
-              <td className="px-5 py-4">{editingHolidays ? <input type="date" value={holiday.tanggal} onChange={(event) => updateDraftHoliday(holiday.id, 'tanggal', event.target.value)} className="h-9 w-[140px] rounded-xl border border-slate-300 px-3 text-[12px] outline-none" /> : <span className="font-semibold">{displayDate(holiday.tanggal)}</span>}</td>
-              <td className="px-5 py-4">{editingHolidays ? <input value={holiday.nama} onChange={(event) => updateDraftHoliday(holiday.id, 'nama', event.target.value)} className="h-9 w-[220px] rounded-xl border border-slate-300 px-3 text-[12px] outline-none" /> : <span className="font-semibold">{holiday.nama}</span>}</td>
-              <td className="px-5 py-4">{editingHolidays ? <select value={holiday.jenis} onChange={(event) => updateDraftHoliday(holiday.id, 'jenis', event.target.value)} className="h-9 w-[140px] rounded-xl border border-slate-300 px-3 text-[12px] outline-none"><option value="nasional">Nasional</option><option value="cuti_bersama">Cuti Bersama</option></select> : <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[10px] font-bold uppercase text-[#EF2427]">{holidayType(holiday.jenis)}</span>}</td>
-              <td className="px-5 py-4">{editingHolidays ? <div className="flex gap-3"><button type="button" onClick={() => updateDraftHoliday(holiday.id, 'aktif', true)} className={cn('h-9 rounded-xl border px-3 text-[10px] font-bold', holiday.aktif ? 'border-[#B7DFE9] bg-[#EDF9FC] text-[#1E93AB]' : 'border-slate-300 text-slate-500')}>YA</button><button type="button" onClick={() => updateDraftHoliday(holiday.id, 'aktif', false)} className={cn('h-9 rounded-xl border px-3 text-[10px] font-bold', !holiday.aktif ? 'border-red-200 bg-red-50 text-[#EF2427]' : 'border-slate-300 text-slate-500')}>TIDAK</button></div> : <span className="rounded-full border border-[#B7DFE9] bg-[#EDF9FC] px-4 py-1 text-[10px] font-bold text-[#1E93AB]">{holiday.aktif ? 'YA' : 'TIDAK'}</span>}</td>
-              {editingHolidays && <td className="px-5 py-4 text-center"><button type="button" onClick={() => removeHoliday(holiday.id)} className="grid size-9 place-items-center rounded-lg border border-red-200 bg-red-50 text-[#EF2427]"><Trash2 size={14} /></button></td>}
+              <td className="px-5 py-4">{editingHolidays ? <input type="date" value={holiday.tanggal} onChange={(event) => updateDraftHoliday(holiday.id, 'tanggal', event.target.value)} disabled={isSavingHolidays || Boolean(deletingHolidayId)} className="h-9 w-[140px] rounded-xl border border-slate-300 px-3 text-[12px] outline-none disabled:opacity-60" /> : <span className="font-semibold">{displayDate(holiday.tanggal)}</span>}</td>
+              <td className="px-5 py-4">{editingHolidays ? <input value={holiday.nama} onChange={(event) => updateDraftHoliday(holiday.id, 'nama', event.target.value)} disabled={isSavingHolidays || Boolean(deletingHolidayId)} className="h-9 w-[220px] rounded-xl border border-slate-300 px-3 text-[12px] outline-none disabled:opacity-60" /> : <span className="font-semibold">{holiday.nama}</span>}</td>
+              <td className="px-5 py-4">{editingHolidays ? <select value={holiday.jenis} onChange={(event) => updateDraftHoliday(holiday.id, 'jenis', event.target.value)} disabled={isSavingHolidays || Boolean(deletingHolidayId)} className="h-9 w-[140px] rounded-xl border border-slate-300 px-3 text-[12px] outline-none disabled:opacity-60"><option value="nasional">Nasional</option><option value="cuti_bersama">Cuti Bersama</option></select> : <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[10px] font-bold uppercase text-[#EF2427]">{holidayType(holiday.jenis)}</span>}</td>
+              <td className="px-5 py-4">{editingHolidays ? <div className="flex gap-3"><button type="button" disabled={isSavingHolidays || Boolean(deletingHolidayId)} onClick={() => updateDraftHoliday(holiday.id, 'aktif', true)} className={cn('h-9 rounded-xl border px-3 text-[10px] font-bold disabled:opacity-60', holiday.aktif ? 'border-[#B7DFE9] bg-[#EDF9FC] text-[#1E93AB]' : 'border-slate-300 text-slate-500')}>YA</button><button type="button" disabled={isSavingHolidays || Boolean(deletingHolidayId)} onClick={() => updateDraftHoliday(holiday.id, 'aktif', false)} className={cn('h-9 rounded-xl border px-3 text-[10px] font-bold disabled:opacity-60', !holiday.aktif ? 'border-red-200 bg-red-50 text-[#EF2427]' : 'border-slate-300 text-slate-500')}>TIDAK</button></div> : <span className="rounded-full border border-[#B7DFE9] bg-[#EDF9FC] px-4 py-1 text-[10px] font-bold text-[#1E93AB]">{holiday.aktif ? 'YA' : 'TIDAK'}</span>}</td>
+              {editingHolidays && <td className="px-5 py-4 text-center"><button type="button" disabled={isSavingHolidays || Boolean(deletingHolidayId)} onClick={() => removeHoliday(holiday.id)} className="grid size-9 place-items-center rounded-lg border border-red-200 bg-red-50 text-[#EF2427] disabled:opacity-60">{deletingHolidayId === holiday.id ? <span className="text-[9px] font-bold">...</span> : <Trash2 size={14} />}</button></td>}
             </tr>)}</tbody>
           </table>
         </div>
       </div>
-      <div className="mt-7 flex justify-end gap-4">{editingHolidays ? <><button type="button" onClick={saveHolidays} className="h-10 min-w-[144px] rounded-full bg-[#EF2427] text-[13px] font-bold text-white">Simpan</button><button type="button" onClick={() => { setHolidayDraft(holidays.map(toHolidayDraft)); setEditingHolidays(false) }} className="h-10 min-w-[144px] rounded-full border border-red-200 bg-red-50 text-[13px] font-bold text-[#EF2427]">Batal</button></> : <><button type="button" onClick={() => setHolidayCreateOpen(true)} className="flex h-10 items-center gap-3 rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white"><Plus size={16} />Tambah Hari Libur</button><button type="button" onClick={startHolidayEdit} className="flex h-10 items-center gap-3 rounded-full border border-red-200 bg-red-50 px-7 text-[13px] font-bold text-[#EF2427]"><img src={penIcon} alt="" className="size-4" />Edit Konfigurasi</button></>}</div>
+      <div className="mt-7 flex justify-end gap-4">{editingHolidays ? <><button type="button" onClick={saveHolidays} disabled={isSavingHolidays || Boolean(deletingHolidayId)} className="h-10 min-w-[144px] rounded-full bg-[#EF2427] text-[13px] font-bold text-white disabled:opacity-60">{isSavingHolidays ? 'Menyimpan...' : 'Simpan'}</button><button type="button" onClick={() => { setHolidayDraft(holidays.map(toHolidayDraft)); setEditingHolidays(false) }} disabled={isSavingHolidays || Boolean(deletingHolidayId)} className="h-10 min-w-[144px] rounded-full border border-red-200 bg-red-50 text-[13px] font-bold text-[#EF2427] disabled:opacity-60">Batal</button></> : <><button type="button" onClick={() => setHolidayCreateOpen(true)} className="flex h-10 items-center gap-3 rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white"><Plus size={16} />Tambah Hari Libur</button><button type="button" onClick={startHolidayEdit} className="flex h-10 items-center gap-3 rounded-full border border-red-200 bg-red-50 px-7 text-[13px] font-bold text-[#EF2427]"><img src={penIcon} alt="" className="size-4" />Edit Konfigurasi</button></>}</div>
     </section>}
     {actionError && <p className="mt-4 text-right text-sm font-medium text-[#EF2427]">{actionError}</p>}
     <HolidayCreateDialog open={holidayCreateOpen} onClose={() => setHolidayCreateOpen(false)} onCreate={create} />
