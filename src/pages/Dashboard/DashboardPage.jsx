@@ -7,6 +7,7 @@ import HorizontalBarChart from "@/components/charts/HorizontalBarChart";
 import VerticalBarChart from "@/components/charts/VerticalBarChart";
 import LeaveBarChart from "@/components/charts/LeaveBarChart";
 import { authStorage } from "@/lib/authStorage";
+import { getSafeErrorMessage } from "@/lib/safeErrors";
 import { ROUTES } from "@/constants/routes";
 import { getAttendanceReport } from "@/services/attendanceService";
 import { getDashboard } from "@/services/dashboardService";
@@ -421,11 +422,7 @@ export default function DashboardPage() {
         return;
       }
 
-      setDashboardError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal memuat data dashboard.",
-      );
+      setDashboardError(getSafeErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -467,11 +464,7 @@ export default function DashboardPage() {
         return;
       }
 
-      setAttendanceError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal memuat data presensi dashboard.",
-      );
+      setAttendanceError(getSafeErrorMessage(error));
     } finally {
       setIsAttendanceLoading(false);
     }
@@ -513,11 +506,7 @@ export default function DashboardPage() {
         return;
       }
 
-      setLeaveError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal memuat data cuti dashboard.",
-      );
+      setLeaveError(getSafeErrorMessage(error));
     } finally {
       setIsLeaveLoading(false);
     }

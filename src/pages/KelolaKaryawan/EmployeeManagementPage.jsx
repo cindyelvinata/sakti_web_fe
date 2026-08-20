@@ -9,6 +9,7 @@ import {
   uploadEmployeeSignature,
 } from "@/services/employeeService";
 import { authStorage } from "@/lib/authStorage";
+import { getSafeErrorMessage, safeErrorMessages } from "@/lib/safeErrors";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 import penIcon from "@/assets/icons/pen.svg";
@@ -440,11 +441,7 @@ export default function EmployeeManagementPage() {
         }
 
         if (requestId === loadRequestId.current) {
-          setErrorMessage(
-            error.response?.data?.message ||
-              error.message ||
-              "Gagal memuat data karyawan.",
-          );
+          setErrorMessage(getSafeErrorMessage(error));
         }
         return null;
       } finally {
@@ -574,10 +571,7 @@ export default function EmployeeManagementPage() {
         ...current,
         [id]: {
           ...current[id],
-          [kind]:
-            error.response?.data?.message ||
-            error.message ||
-            `${kind === "photo" ? "Foto" : "TTD"} gagal diupload.`,
+          [kind]: getSafeErrorMessage(error, safeErrorMessages.uploadFailed),
         },
       }));
     } finally {
@@ -608,8 +602,10 @@ export default function EmployeeManagementPage() {
       const hasFileErrors = Object.values(editFileErrors).some((errors) =>
         Object.values(errors || {}).some(Boolean),
       );
-      if (hasFileErrors)
-        throw new Error("Periksa kembali format atau ukuran file foto/TTD.");
+      if (hasFileErrors) {
+        setSaveError("Periksa kembali format atau ukuran file foto/TTD.");
+        return;
+      }
       const originalById = new Map(
         records.map((employee) => [employee.id, employee]),
       );
@@ -640,10 +636,10 @@ export default function EmployeeManagementPage() {
           } catch (error) {
             nextUploadErrors[id] = {
               ...nextUploadErrors[id],
-              [kind]:
-                error.response?.data?.message ||
-                error.message ||
-                `${kind === "photo" ? "Foto" : "TTD"} gagal diupload.`,
+              [kind]: getSafeErrorMessage(
+                error,
+                safeErrorMessages.uploadFailed,
+              ),
             };
           }
         }),
@@ -675,11 +671,7 @@ export default function EmployeeManagementPage() {
       setEditUploadErrors({});
       setIsEditMode(false);
     } catch (error) {
-      setSaveError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal menyimpan perubahan karyawan.",
-      );
+      setSaveError(getSafeErrorMessage(error));
     } finally {
       setIsSaving(false);
       setSaveLabel("");
@@ -692,10 +684,10 @@ export default function EmployeeManagementPage() {
       try {
         await uploadEmployeePhoto(files.photo, karyawanId);
       } catch (error) {
-        uploadErrors.photo =
-          error.response?.data?.message ||
-          error.message ||
-          "Foto gagal diupload.";
+        uploadErrors.photo = getSafeErrorMessage(
+          error,
+          safeErrorMessages.uploadFailed,
+        );
       }
     }
 
@@ -703,10 +695,10 @@ export default function EmployeeManagementPage() {
       try {
         await uploadEmployeeSignature(files.signature, karyawanId);
       } catch (error) {
-        uploadErrors.signature =
-          error.response?.data?.message ||
-          error.message ||
-          "TTD gagal diupload.";
+        uploadErrors.signature = getSafeErrorMessage(
+          error,
+          safeErrorMessages.uploadFailed,
+        );
       }
     }
 
@@ -728,7 +720,7 @@ export default function EmployeeManagementPage() {
           files?.photo || files?.signature
             ? {
                 create:
-                  "Karyawan berhasil dibuat, tetapi ID karyawan tidak tersedia untuk upload file.",
+                  "Karyawan berhasil dibuat, tetapi upload file belum dapat dilakukan.",
               }
             : {},
       };
@@ -814,11 +806,7 @@ export default function EmployeeManagementPage() {
         return;
       }
 
-      setSaveError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal mengekspor data karyawan.",
-      );
+      setSaveError(getSafeErrorMessage(error));
     } finally {
       setIsExporting(false);
     }

@@ -3,8 +3,7 @@ import apiClient from "@/lib/apiClient";
 export async function getLeaveReport(params) {
   const { data } = await apiClient.get("/api/admin/cuti", { params });
 
-  if (!data?.success)
-    throw new Error(data?.message || "Gagal memuat laporan cuti.");
+  if (!data?.success) throw new Error("Gagal memuat laporan cuti.");
 
   const report = data.data ?? {};
   return {

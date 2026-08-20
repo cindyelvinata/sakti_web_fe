@@ -3,7 +3,7 @@ import { compressEmployeeUploadImage } from "@/lib/imageCompression";
 
 async function unwrap(request, fallbackMessage) {
   const { data } = await request;
-  if (!data?.success) throw new Error(data?.message || fallbackMessage);
+  if (!data?.success) throw new Error(fallbackMessage);
   return data.data;
 }
 
@@ -27,8 +27,7 @@ export async function uploadWorkConfigurationLogo(file) {
     headers: { "Content-Type": "multipart/form-data" },
   });
 
-  if (!data?.success)
-    throw new Error(data?.message || "Gagal mengunggah logo kantor.");
+  if (!data?.success) throw new Error("Upload gagal. Silakan coba lagi.");
 
   const url = data.data?.url || data.url;
   if (!url) throw new Error("URL logo tidak tersedia dari response upload.");
@@ -38,8 +37,7 @@ export async function uploadWorkConfigurationLogo(file) {
 
 export async function getHolidays(params = { page: 1, limit: 100 }) {
   const { data } = await apiClient.get("/api/admin/libur", { params });
-  if (!data?.success)
-    throw new Error(data?.message || "Gagal memuat hari libur.");
+  if (!data?.success) throw new Error("Gagal memuat hari libur.");
   return {
     items: Array.isArray(data.data) ? data.data : [],
     meta: data.meta ?? {},

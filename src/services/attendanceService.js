@@ -4,7 +4,7 @@ export async function getAttendanceReport(params) {
   const { data } = await apiClient.get("/api/admin/presensi", { params });
 
   if (!data?.success) {
-    throw new Error(data?.message || "Gagal memuat laporan presensi.");
+    throw new Error("Gagal memuat laporan presensi.");
   }
 
   const report = data.data ?? {};

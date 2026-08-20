@@ -4,7 +4,7 @@ import { compressEmployeeUploadImage } from "@/lib/imageCompression";
 async function unwrap(request, fallbackMessage) {
   const { data } = await request;
 
-  if (!data?.success) throw new Error(data?.message || fallbackMessage);
+  if (!data?.success) throw new Error(fallbackMessage);
 
   return data.data;
 }
@@ -12,8 +12,7 @@ async function unwrap(request, fallbackMessage) {
 export async function getEmployees(params) {
   const { data } = await apiClient.get("/api/admin/karyawan", { params });
 
-  if (!data?.success)
-    throw new Error(data?.message || "Gagal memuat data karyawan.");
+  if (!data?.success) throw new Error("Gagal memuat data karyawan.");
 
   return {
     items: Array.isArray(data.data) ? data.data.filter(Boolean) : [],

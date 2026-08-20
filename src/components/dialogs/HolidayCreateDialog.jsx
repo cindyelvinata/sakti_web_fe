@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { getSafeErrorMessage } from "@/lib/safeErrors";
 
 const initialForm = { date: "", name: "", type: "Nasional" };
 
@@ -22,11 +23,7 @@ export default function HolidayCreateDialog({ open, onClose, onCreate }) {
       setForm(initialForm);
       onClose();
     } catch (error) {
-      setMessage(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal menambah hari libur.",
-      );
+      setMessage(getSafeErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

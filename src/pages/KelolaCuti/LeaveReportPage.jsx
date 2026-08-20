@@ -7,6 +7,7 @@ import {
   getLeaveReport,
 } from "@/services/leaveReportService";
 import { authStorage } from "@/lib/authStorage";
+import { getSafeErrorMessage } from "@/lib/safeErrors";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
@@ -197,11 +198,7 @@ export default function LeaveReportPage() {
         return;
       }
 
-      setErrorMessage(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal memuat laporan cuti.",
-      );
+      setErrorMessage(getSafeErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
@@ -282,9 +279,7 @@ export default function LeaveReportPage() {
       link.click();
       URL.revokeObjectURL(url);
     } catch (error) {
-      setDownloadError(
-        error.response?.data?.message || "Gagal mengunduh laporan cuti.",
-      );
+      setDownloadError(getSafeErrorMessage(error));
     } finally {
       setIsDownloading(false);
     }

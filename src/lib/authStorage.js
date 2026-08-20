@@ -6,6 +6,32 @@ function notifySessionChanged() {
   window.dispatchEvent(new Event(SESSION_EVENT));
 }
 
+function sanitizeUser(user) {
+  if (!user || typeof user !== "object") return null;
+
+  const allowedFields = [
+    "id",
+    "karyawan_id",
+    "email",
+    "nama_lengkap",
+    "name",
+    "role",
+    "nomor_telepon",
+    "level_jabatan",
+    "divisi",
+    "unit",
+    "foto_url",
+    "status_karyawan",
+    "atasan_langsung_id",
+  ];
+
+  return allowedFields.reduce((result, field) => {
+    if (user[field] !== undefined && user[field] !== null)
+      result[field] = user[field];
+    return result;
+  }, {});
+}
+
 export const authStorage = {
   getAccessToken: () => localStorage.getItem(ACCESS_TOKEN_KEY),
 
@@ -25,8 +51,10 @@ export const authStorage = {
   setSession: ({ accessToken, user }) => {
     localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
 
-    if (user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    const safeUser = sanitizeUser(user);
+
+    if (safeUser) {
+      localStorage.setItem(USER_KEY, JSON.stringify(safeUser));
     } else {
       localStorage.removeItem(USER_KEY);
     }

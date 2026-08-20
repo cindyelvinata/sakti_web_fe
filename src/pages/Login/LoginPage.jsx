@@ -7,6 +7,7 @@ import eyeOpenIcon from "@/assets/images/eye1_icons.svg";
 import eyeClosedIcon from "@/assets/images/eye2_icons.svg";
 import loginIllustration from "@/assets/images/login_icons.svg";
 import { login } from "@/services/authService";
+import { safeErrorMessages } from "@/lib/safeErrors";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -16,6 +17,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
     const formData = new FormData(event.currentTarget);
 
     setErrorMessage("");
@@ -26,14 +28,12 @@ export default function LoginPage() {
         email: formData.get("email"),
         password: formData.get("password"),
       });
+      form.reset();
       navigate(ROUTES.dashboard);
-    } catch (error) {
-      setErrorMessage(
-        error.response?.data?.message ||
-          error.message ||
-          "Login gagal. Silakan coba lagi.",
-      );
+    } catch {
+      setErrorMessage(safeErrorMessages.loginFailed);
     } finally {
+      if (form.elements.password) form.elements.password.value = "";
       setIsLoading(false);
     }
   };

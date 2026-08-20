@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { ImagePlus, RefreshCw, X } from "lucide-react";
+import { getSafeErrorMessage, safeErrorMessages } from "@/lib/safeErrors";
 
 const initialForm = {
   nama_lengkap: "",
@@ -195,7 +196,10 @@ export default function EmployeeCreateDialog({
     setSubmitLabel("");
   };
   const close = () => {
-    if (!isSubmitting && !retrying) onClose();
+    if (!isSubmitting && !retrying) {
+      reset();
+      onClose();
+    }
   };
   const finish = () => {
     if (isSubmitting || retrying) return;
@@ -238,6 +242,7 @@ export default function EmployeeCreateDialog({
       const nextUploadErrors = result?.uploadErrors || {};
 
       if (hasUploadErrors(nextUploadErrors)) {
+        setForm((current) => ({ ...current, password: "" }));
         setCreatedId(result?.karyawanId || null);
         setUploadErrors(nextUploadErrors);
         setMessage(
@@ -249,11 +254,7 @@ export default function EmployeeCreateDialog({
       reset();
       onClose();
     } catch (error) {
-      setMessage(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal menambah karyawan.",
-      );
+      setMessage(getSafeErrorMessage(error));
     } finally {
       setIsSubmitting(false);
       setSubmitLabel("");
@@ -288,10 +289,7 @@ export default function EmployeeCreateDialog({
     } catch (error) {
       setUploadErrors((current) => ({
         ...current,
-        [key]:
-          error.response?.data?.message ||
-          error.message ||
-          `Gagal mengupload ${key === "photo" ? "foto" : "TTD"}.`,
+        [key]: getSafeErrorMessage(error, safeErrorMessages.uploadFailed),
       }));
     } finally {
       setRetrying("");

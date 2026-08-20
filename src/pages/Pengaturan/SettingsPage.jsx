@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Building2, ImageUp, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getSafeErrorMessage, safeErrorMessages } from "@/lib/safeErrors";
 import penIcon from "@/assets/icons/pen.svg";
 import HolidayCreateDialog from "@/components/dialogs/HolidayCreateDialog";
 import {
@@ -124,11 +125,7 @@ export default function SettingsPage() {
       setHolidays(holidayResult.items.map(toHolidayDraft));
       clearLogoSelection();
     } catch (error) {
-      setErrorMessage(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal memuat pengaturan.",
-      );
+      setErrorMessage(getSafeErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -189,9 +186,12 @@ export default function SettingsPage() {
       setEditingConfiguration(false);
     } catch (error) {
       setActionError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal menyimpan konfigurasi kerja.",
+        getSafeErrorMessage(
+          error,
+          logoFile
+            ? safeErrorMessages.uploadFailed
+            : safeErrorMessages.requestFailed,
+        ),
       );
     } finally {
       setIsSavingConfiguration(false);
@@ -230,11 +230,7 @@ export default function SettingsPage() {
       await load();
       setEditingHolidays(false);
     } catch (error) {
-      setActionError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal menyimpan hari libur.",
-      );
+      setActionError(getSafeErrorMessage(error));
     } finally {
       setIsSavingHolidays(false);
     }
@@ -256,11 +252,7 @@ export default function SettingsPage() {
       await deleteHoliday(id);
       await load();
     } catch (error) {
-      setActionError(
-        error.response?.data?.message ||
-          error.message ||
-          "Gagal menghapus hari libur.",
-      );
+      setActionError(getSafeErrorMessage(error));
     } finally {
       setDeletingHolidayId(null);
     }
