@@ -23,7 +23,7 @@ export async function uploadWorkConfigurationLogo(file) {
   const formData = new FormData();
   formData.append("image", uploadFile);
 
-  const { data } = await apiClient.post("/api/upload/image", formData, {
+  const { data } = await apiClient.post("/api/admin/upload/logo", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 

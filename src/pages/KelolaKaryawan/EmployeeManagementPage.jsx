@@ -202,14 +202,14 @@ function ColumnFilter({
         <ChevronDown size={14} />
       </button>
       {openFilter === id && (
-        <div className="absolute left-0 top-full z-40 mt-2 w-44 rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-slate-200">
+        <div className="absolute left-0 top-full z-40 mt-2 min-w-max max-w-[min(24rem,calc(100vw-2rem))] rounded-xl bg-white p-1.5 shadow-xl ring-1 ring-slate-200">
           {options.map((option) => (
             <button
               key={option.value || "all"}
               type="button"
               onClick={() => onChange(option.value)}
               className={cn(
-                "block w-full rounded-lg px-3 py-2 text-left text-[12px] font-medium normal-case text-slate-700 hover:bg-[#FDE5E5]",
+                "block w-full whitespace-normal break-words rounded-lg px-3 py-2 text-left text-[12px] font-medium normal-case text-slate-700 hover:bg-[#FDE5E5]",
                 value === option.value &&
                   "bg-[#FDE5E5] font-semibold text-[#EF2427]",
               )}
