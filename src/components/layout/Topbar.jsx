@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { Menu } from "lucide-react";
+import { CircleUserRound, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
-import personIcon from "@/assets/icons/person_icons.svg";
 import { authStorage } from "@/lib/authStorage";
 
 function displayName(user) {
@@ -48,19 +47,7 @@ export default function Topbar({ onMenuClick }) {
       </div>
       <div className="flex min-w-0 shrink items-center gap-3">
         <Avatar className="size-10 bg-[#E62727]">
-          {user?.foto_url ? (
-            <img
-              src={user.foto_url}
-              alt=""
-              className="size-full object-cover"
-            />
-          ) : (
-            <img
-              src={personIcon}
-              alt=""
-              className="size-[18px] brightness-0 invert"
-            />
-          )}
+          <CircleUserRound size={20} className="text-white" />
         </Avatar>
         <p className="hidden max-w-[220px] truncate text-sm font-semibold text-slate-900 sm:block">
           {displayName(user)}

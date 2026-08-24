@@ -54,7 +54,7 @@ async function uploadImage(endpoint, file, karyawanId, fallbackMessage, kind) {
 
 export const uploadEmployeePhoto = (file, karyawanId) =>
   uploadImage(
-    "/api/upload/image",
+    "/api/admin/upload/image",
     file,
     karyawanId,
     "Gagal mengunggah foto karyawan.",
