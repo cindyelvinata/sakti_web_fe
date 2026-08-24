@@ -8,8 +8,18 @@ const apiClient = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+function isAdminRequest(url = "") {
+  return url.startsWith("/api/admin/");
+}
+
 apiClient.interceptors.request.use((config) => {
   const accessToken = authStorage.getAccessToken();
+
+  if (isAdminRequest(config.url) && !accessToken) {
+    const error = new Error("Admin session is not available.");
+    error.response = { status: 401 };
+    return Promise.reject(error);
+  }
 
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;

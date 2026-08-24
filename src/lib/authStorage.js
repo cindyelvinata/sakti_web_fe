@@ -6,6 +6,16 @@ function notifySessionChanged() {
   window.dispatchEvent(new Event(SESSION_EVENT));
 }
 
+function subscribeSessionChanged(callback) {
+  window.addEventListener(SESSION_EVENT, callback);
+  window.addEventListener("storage", callback);
+
+  return () => {
+    window.removeEventListener(SESSION_EVENT, callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
 function sanitizeUser(user) {
   if (!user || typeof user !== "object") return null;
 
@@ -67,4 +77,10 @@ export const authStorage = {
     localStorage.removeItem(USER_KEY);
     notifySessionChanged();
   },
+
+  hasAdminSession: () =>
+    Boolean(localStorage.getItem(ACCESS_TOKEN_KEY)) &&
+    authStorage.getUser()?.role === "admin",
+
+  subscribe: subscribeSessionChanged,
 };
