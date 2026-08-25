@@ -17,6 +17,7 @@ apiClient.interceptors.request.use((config) => {
 
   if (isAdminRequest(config.url) && !accessToken) {
     const error = new Error("Admin session is not available.");
+    error.isAuthGuardError = true;
     error.response = { status: 401 };
     return Promise.reject(error);
   }
@@ -31,7 +32,7 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.isAuthGuardError) {
       authStorage.clearSession();
       window.dispatchEvent(new Event("admin-auth:unauthorized"));
     }
