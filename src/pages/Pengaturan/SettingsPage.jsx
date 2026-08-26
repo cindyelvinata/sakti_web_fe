@@ -663,9 +663,13 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={startHolidayEdit}
-                  className="flex h-10 items-center gap-3 rounded-full border border-red-200 bg-red-50 px-7 text-[13px] font-bold text-[#EF2427]"
+                  className="flex h-10 items-center gap-3 rounded-full bg-[#EF2427] px-7 text-[13px] font-bold text-white"
                 >
-                  <img src={penIcon} alt="" className="size-4" />
+                  <img
+                    src={penIcon}
+                    alt=""
+                    className="size-4 brightness-0 invert"
+                  />
                   Edit Konfigurasi
                 </button>
               </>

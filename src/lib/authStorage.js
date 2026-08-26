@@ -1,6 +1,7 @@
 const ACCESS_TOKEN_KEY = "admin_access_token";
 const USER_KEY = "admin_user";
 const SESSION_EVENT = "admin-auth:session-changed";
+const LOGIN_MESSAGE_KEY = "admin_login_message";
 
 function notifySessionChanged() {
   window.dispatchEvent(new Event(SESSION_EVENT));
@@ -76,6 +77,16 @@ export const authStorage = {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     notifySessionChanged();
+  },
+
+  setLoginMessage: (message) => {
+    if (message) sessionStorage.setItem(LOGIN_MESSAGE_KEY, message);
+  },
+
+  consumeLoginMessage: () => {
+    const message = sessionStorage.getItem(LOGIN_MESSAGE_KEY);
+    sessionStorage.removeItem(LOGIN_MESSAGE_KEY);
+    return message || "";
   },
 
   hasAdminSession: () =>

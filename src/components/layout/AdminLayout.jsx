@@ -12,9 +12,22 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   useEffect(() => {
     const handleUnauthorized = () => navigate(ROUTES.login, { replace: true });
+    const handleAccountInactive = () =>
+      navigate(ROUTES.login, { replace: true });
+
     window.addEventListener("admin-auth:unauthorized", handleUnauthorized);
-    return () =>
+    window.addEventListener(
+      "admin-auth:account-inactive",
+      handleAccountInactive,
+    );
+
+    return () => {
       window.removeEventListener("admin-auth:unauthorized", handleUnauthorized);
+      window.removeEventListener(
+        "admin-auth:account-inactive",
+        handleAccountInactive,
+      );
+    };
   }, [navigate]);
   const confirmLogout = () => {
     authStorage.clearSession();

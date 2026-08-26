@@ -7,13 +7,16 @@ import eyeOpenIcon from "@/assets/images/eye1_icons.svg";
 import eyeClosedIcon from "@/assets/images/eye2_icons.svg";
 import loginIllustration from "@/assets/images/login_icons.svg";
 import { login } from "@/services/authService";
+import { authStorage } from "@/lib/authStorage";
 import { safeErrorMessages } from "@/lib/safeErrors";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState(() =>
+    authStorage.consumeLoginMessage(),
+  );
 
   const handleSubmit = async (event) => {
     event.preventDefault();
